@@ -1,0 +1,41 @@
+/****************************************************************************
+
+
+res.rc
+
+produced by Borland Resource Workshop
+
+
+*****************************************************************************/
+
+#include "res.h"
+
+
+IDD_DIALOG_COMMENT2 DIALOG 37, 70, 291, 107
+STYLE DS_MODALFRAME | DS_CENTER | WS_OVERLAPPED | WS_VISIBLE | WS_CAPTION | WS_SYSMENU
+CAPTION "PBSCC Proxy"
+FONT 8, "MS Shell Dlg"
+{
+ GROUPBOX "Description", -1, 7, 7, 277, 75, BS_GROUPBOX
+ COMBOBOX IDC_COMBO_MSG, 50, 18, 228, 125, CBS_DROPDOWN | WS_VSCROLL | WS_GROUP | WS_TABSTOP
+ EDITTEXT IDC_PATH,      50, 34, 228, 42, ES_MULTILINE | ES_AUTOVSCROLL | ES_AUTOHSCROLL | ES_READONLY | NOT WS_TABSTOP | WS_BORDER | WS_VSCROLL | WS_HSCROLL
+ DEFPUSHBUTTON "OK", IDOK, 88, 86, 50, 14, BS_DEFPUSHBUTTON | WS_GROUP | WS_TABSTOP
+ PUSHBUTTON "Cancel", IDCANCEL, 145, 86, 50, 14, WS_GROUP | WS_TABSTOP
+ LTEXT "Message :", -1, 13, 19, 35, 10, NOT WS_GROUP
+ LTEXT "Path :", -1, 13, 35, 35, 10, NOT WS_GROUP
+}
+
+IDD_DIALOG_LOGIN DIALOG 75, 70, 176, 69
+STYLE DS_MODALFRAME | DS_CENTER | WS_OVERLAPPED | WS_VISIBLE | WS_CAPTION | WS_SYSMENU
+CAPTION "PBSCC Proxy authorization"
+FONT 8, "MS Shell Dlg"
+{
+ RTEXT "User :",     -1, 7,  6,  40, 12
+ RTEXT "Password :", -1, 7, 23,  40, 12
+ EDITTEXT IDC_SVNUID,   52,  6, 110, 12
+ EDITTEXT IDC_SVNPWD,   52, 23, 110, 12, ES_PASSWORD | WS_BORDER | WS_TABSTOP
+ DEFPUSHBUTTON "OK", IDOK, 29, 46, 50, 14
+ PUSHBUTTON "Cancel", IDCANCEL, 91, 47, 50, 14
+}
+
+
