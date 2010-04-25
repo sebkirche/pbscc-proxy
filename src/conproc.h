@@ -1,0 +1,1 @@
+BOOL _execscc(THECONTEXT*ctx, char * cmd,char * parm,char * parm2=NULL);
