@@ -32,7 +32,6 @@
 HINSTANCE	hInstance;
 FILE		*logFile=NULL;
 CHAR		*gpSccName="PBSCC Proxy";
-CHAR		*gpSccVersion="version 2010-02-27";
 
 HWND		consoleHwnd=NULL;
 CHAR        filesubst[4000];
@@ -774,7 +773,9 @@ SCCEXTERNC SCCRTN EXTFUN SccOpenProject(LPVOID pContext,HWND hWnd, LPSTR lpUser,
 	ctx->cbProjName=strlen(ctx->lpProjName);
 	ctx->cbProjPath=strlen(ctx->lpProjPath);
 	ctx->lpOutProc=lpTextOutProc;
-	_msg(ctx,gpSccVersion);
+	mstring ver=mstring();
+	ver.sprintf("version %s built on %s",PROJECT_VER,PROJECT_DATE);
+	_msg(ctx,ver.c_str());
 	
 	{
 		HKEY rkey;
