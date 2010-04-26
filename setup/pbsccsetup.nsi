@@ -1,11 +1,12 @@
 ;
 
-!include "StrFunc.nsh"
+!include "EnvVarUpdate.nsh"
+;!include "StrFunc.nsh"
+
 SetCompressor lzma
 
-${StrStr}
 
-Name "PBSCC Proxy"
+Name "PBSCC Proxy $%PBSCC_VERSION%"
 
 OutFile "pbsccsetup.exe"
 
@@ -38,6 +39,8 @@ Section "PBSCC Proxy"
 	File "Bin\svnlog.cmd"
 	File "Bin\svndiff.cmd"
 	File "Bin\pbscc.dll"
+	
+	WriteUninstaller "PbSccDel.exe"
 
 	
 	; Write the installation path into the registry
@@ -67,23 +70,8 @@ Section "PBSCC Proxy"
 	
 	
 	
-	;write PATH
-	ReadRegStr $0 HKLM "SYSTEM\CurrentControlSet\Control\Session Manager\Environment" "Path"
-	${StrStr} $1 $0 "$INSTDIR\bin"
-	StrCmp $1 "" 0 +4
-	WriteRegExpandStr HKLM "SYSTEM\CurrentControlSet\Control\Session Manager\Environment" "Path" "$0;$INSTDIR\bin"
-	DetailPrint "path has been changed... reboot required."
-	SetRebootFlag true
+	;${EnvVarUpdate} $0 "PATH" "A" "HKLM" "PathString" "$INSTDIR\bin"
 
-	
-	WriteUninstaller "PbSccDel.exe"
-	
-	;
-	IfRebootFlag +2
-		Return
-	MessageBox MB_YESNO|MB_ICONQUESTION "Need to reboot the system to finish installation.$\nDo you want to reboot it right now?" IDNO +2
-	Reboot
-	;
 SectionEnd ; end the section
 
 ;--------------------------------
