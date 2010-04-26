@@ -11,6 +11,8 @@ OBJS= $(CPP_FILES:.cpp=.obj)
 
 all: x_res x_exe
 
+ver: 
+	-SubWCRev . version.hxx tmp\version.h
 
 .cpp.obj:
 	$(cc) -Ox $(cflags) $(cvarsdll) -DSTRICT -YX -DNODEBUG $<
