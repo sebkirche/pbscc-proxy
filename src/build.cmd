@@ -30,6 +30,10 @@ if "%1"=="build"    call :make all
 if "%1"=="rebuild"  call :make clean all
 if "%1"=="clean"    call :make clean
 
+rem copy pbscc.dll to installation directory
+copy /Y pbscc.dll ..\setup\bin
+
+
 :end
 exit 0
 

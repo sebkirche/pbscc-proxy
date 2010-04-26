@@ -25,3 +25,4 @@ EXPORTS
 	SccAddFromScc
 	SccSetOption
 	SccQueryInfoEx
+	PbSccVersion

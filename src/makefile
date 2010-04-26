@@ -9,7 +9,7 @@ CPP_FILES= pbscc.cpp todo.cpp easystr.cpp entries.cpp filecmp.cpp conproc.cpp lo
 
 OBJS= $(CPP_FILES:.cpp=.obj)
 
-all: x_res x_exe
+all: ver x_res x_exe
 
 ver: 
 	-SubWCRev . version.hxx tmp\version.h
@@ -21,7 +21,7 @@ x_res:
 	rc $(rcvars) $(rcflags) -r -fo $(PRJNAME).res $(PRJNAME).rc
 
 x_exe: $(OBJS)
-	$(link) /dll /RELEASE -out:$(PRJNAME).dll $(OBJS) $(PRJNAME).res $(LIB_FILES) /DEF:$(PRJNAME).def
+	$(link) /dll /RELEASE /VERSION:2.4 -out:$(PRJNAME).dll $(OBJS) $(PRJNAME).res $(LIB_FILES) /DEF:$(PRJNAME).def
 
 clean:
 	-del *.obj
