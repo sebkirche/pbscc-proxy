@@ -26,6 +26,8 @@
 #include "entries.h"
 #include "filecmp.h"
 #include "conproc.h"
+#include "tmp\version.h"
+#include "FCNTL.H"
 
 HINSTANCE	hInstance;
 FILE		*logFile=NULL;
@@ -615,6 +617,14 @@ bool _getcomment(THECONTEXT*ctx,HWND hWnd,LONG nFiles, LPCSTR* lpFileNames,SCCCO
 
 
 extern "C"{
+	
+void PbSccVersion(){
+	FILE*f=fopen("pbscc.ver","wt");
+	fprintf(f,"version=%s\n",PROJECT_VER);
+	fprintf(f,"date=%s\n",PROJECT_DATE);
+	fflush(f);
+	fclose(f);
+}
 
 	
 SCCEXTERNC SCCRTN EXTFUN SccInitialize(LPVOID * ppContext, HWND hWnd, LPCSTR lpCallerName,LPSTR lpSccName, LPLONG lpSccCaps, LPSTR lpAuxPathLabel, LPLONG pnCheckoutCommentLen, LPLONG pnCommentLen){
