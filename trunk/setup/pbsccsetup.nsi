@@ -1,7 +1,6 @@
 ;
 
 !include "EnvVarUpdate.nsh"
-;!include "StrFunc.nsh"
 
 SetCompressor lzma
 
@@ -70,7 +69,7 @@ Section "PBSCC Proxy"
 	
 	
 	
-	;${EnvVarUpdate} $0 "PATH" "A" "HKLM" "PathString" "$INSTDIR\bin"
+	${EnvVarUpdate} $0 "PATH" "A" "HKLM" "$INSTDIR\bin"
 
 SectionEnd ; end the section
 
