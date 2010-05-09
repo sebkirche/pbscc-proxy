@@ -17,7 +17,7 @@
 
 #ifndef __MSTRING_H__
 #define __MSTRING_H__
-#define __MSTRING_H__ALLOC 2048
+#define __MSTRING_H__ALLOC 512
 
 #include <tchar.h>
 #include "deelx.h"
@@ -137,12 +137,22 @@ class mstring {
 			return true;
 		}
 		
-		void append(TCHAR * c){
+		void append(const TCHAR * c){
 			if(!c)return;
 			long i=_tcslen(c);
 			realloc(length+i+1);
 			_tcscpy(ptr+length,c);
 			length+=i;
+			//printf("append > %s<<\n",ptr);
+		}
+		
+		void append(const TCHAR * c,int len){
+			if(!c || !len)return;
+			realloc(length+len+1);
+			_tcsncpy(ptr+length,c,len);
+			length+=len;
+			ptr[length]=0;
+			length=_tcslen(ptr);
 			//printf("append > %s<<\n",ptr);
 		}
 		
