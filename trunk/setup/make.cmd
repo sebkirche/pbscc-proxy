@@ -16,8 +16,9 @@ rem we gor nsis path in TTT@ variable
 
 
 rem get pbscc.dll version
+del /Q pbscc.ver >nul 2>nul
 rundll32 bin\pbscc.dll,PbSccVersion
-if errorlevel 1 call :error "Error getting pbscc.dll version information"
+if not exist pbscc.ver call :error "Error getting pbscc.dll version information"
 
 rem expected pbscc.ver file created
 for /F %%i in (pbscc.ver) do set pbscc_%%i
