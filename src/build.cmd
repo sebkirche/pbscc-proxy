@@ -25,9 +25,12 @@ set path=%MSVC_HOME%\bin;%path%
 set include=%MSVC_HOME%\include
 set lib=%MSVC_HOME%\lib
 
-if "%1"==""         call :make all
 if "%1"=="build"    call :make all
+if "%1"=="b"        call :make all
+if "%1"==""         call :make clean all
+if "%1"=="r"        call :make clean all
 if "%1"=="rebuild"  call :make clean all
+if "%1"=="c"        call :make clean
 if "%1"=="clean"    call :make clean
 
 rem copy pbscc.dll to installation directory
