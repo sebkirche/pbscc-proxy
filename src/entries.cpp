@@ -21,7 +21,7 @@
 #include "entries.h"
 
 //functions to parse .svn/entries file
-
+//this version not supported anymore
 bool entries_scan_old(char*entries,ENTRYSCANCALLBACK callback,void*udata){
 	SVNENTRY e;
 	char buf[ES_MAX_LEN];
@@ -90,7 +90,7 @@ bool entries_scan_old(char*entries,ENTRYSCANCALLBACK callback,void*udata){
 					strncpy(e.repository,c,ES_MAX_LEN);
 					e.repository[ES_MAX_LEN]=0;
 				}else if(!strncmp(c,"deleted=\"true\"",14)){
-					strcpy(e.scedule,"delete");
+					strcpy(e.schedule,"delete");
 				}
 			}
 		}
@@ -145,11 +145,14 @@ bool entries_scan(char*entries,ENTRYSCANCALLBACK callback,void*udata){
 				case 5: //repository
 					strncpy(e.repository,buf,ES_MAX_LEN);
 					break;
-				case 6: //scedule: delete, add, replace
-					strncpy(e.scedule,buf,ES_SIMPLE_LEN);
+				case 6: //schedule: delete, add, replace
+					strncpy(e.schedule,buf,ES_SIMPLE_LEN);
 					break;
 				case 10: //revision
 					e.revision=atol( buf );
+					break;
+				case 28: //lock owner
+					strncpy(e.lockowner,buf,ES_SIMPLE_LEN);
 					break;
 				default:
 					//do nothing

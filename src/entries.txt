@@ -146,11 +146,11 @@ typedef struct svn_wc_entry_t
 } svn_wc_entry_t;
 -------------------------------------------------------
 1 Name
-2 Kind (file,dir) //the last item for not owner dirs except when it's sceduled for something
+2 Kind (file,dir) //the last item for not owner dirs except when it's scheduled for something
 3 Revision (usualy setup for owner dirs)
 4 Url (usually valid only for owner)
 5 Repository (usually valid only for owner)
-6 Scedule (delete,add,replace)
+6 Schedule (delete,add,replace)
 7 Text Timestamp (File Timestamp ?)
 8 Checksum (32 bytes of 0-9 and a-f characters) ex:e71c273fbb7f2b04b6e39459a0299c24
 9 Last Commit Timestamp (2005-11-15T14:16:31.653187Z)
