@@ -168,7 +168,7 @@ bool _BuildCacheCallback(SVNENTRY*e,void*udata){
 			sprintf(EOPS(d->ps),"\\%s\\prop-base\\%s.svn-base",_svn,e->name);
 			GetProperty(d->ps->ptr,"lockby",lockby,sizeof(lockby));
 			sprintf(EOPS(d->ps),"\\%s\\cache\\%s.cch",_svn,e->name);
-			if( strcmp(e->scedule,"delete") ){
+			if( strcmp(e->schedule,"delete") ){
 				FILE*fcch=fopen(d->ps->ptr,"wt");
 				if(fcch){
 					fprintf(fcch,"%d\n%s\n",e->revision, lockby);

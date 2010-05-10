@@ -17,7 +17,7 @@
 
 
 
-#define ES_SIMPLE_LEN 25
+#define ES_SIMPLE_LEN 100
 #define ES_MAX_LEN 3000
 
 
@@ -26,8 +26,9 @@ typedef struct {
 	char kind[ES_SIMPLE_LEN+1]; //file,dir
 	char url[ES_MAX_LEN+1];// (usually valid only for owner)
 	char repository[ES_MAX_LEN+1]; // (usually valid only for owner)
-	char scedule[ES_SIMPLE_LEN+1]; // (delete,add,replace)
+	char schedule[ES_SIMPLE_LEN+1]; // (delete,add,replace)
 	long revision; //(usually valid for files)
+	char lockowner[ES_SIMPLE_LEN+1]; // (delete,add,replace)
 }SVNENTRY;
 
 
