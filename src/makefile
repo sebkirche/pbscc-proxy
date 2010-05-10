@@ -2,14 +2,14 @@
 
 PRJNAME=pbscc
 
-LIB_FILES= KERNEL32.lib USER32.lib SHELL32.LIB ADVAPI32.LIB wininet.lib
+LIB_FILES= KERNEL32.lib USER32.lib SHELL32.LIB ADVAPI32.LIB wininet.lib lib\libexpat.lib
 
 
-CPP_FILES= pbscc.cpp todo.cpp easystr.cpp entries.cpp filecmp.cpp conproc.cpp login.cpp
+CPP_FILES= pbscc.cpp todo.cpp easystr.cpp entries.cpp filecmp.cpp conproc.cpp login.cpp test.cpp
 
 OBJS= $(CPP_FILES:.cpp=.obj)
 
-all: ver x_res x_exe
+all: ver x_res x_exe test
 
 ver: 
 	-SubWCRev . version.hxx tmp\version.h
@@ -22,6 +22,9 @@ x_res:
 
 x_exe: $(OBJS)
 	$(link) /dll /RELEASE /VERSION:2.4 -out:$(PRJNAME).dll $(OBJS) $(PRJNAME).res $(LIB_FILES) /DEF:$(PRJNAME).def
+
+test: $(OBJS)
+	$(link) /RELEASE -out:$(PRJNAME)_test.exe $(OBJS) $(PRJNAME).res $(LIB_FILES)
 
 clean:
 	-del *.obj
