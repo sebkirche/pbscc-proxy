@@ -113,3 +113,6 @@ bool ShowSysError(char*info,int err=0);
 bool _loginscc(THECONTEXT*ctx);
 void _msg(THECONTEXT*ctx,char * s);
 extern HINSTANCE	hInstance;
+
+
+BOOL BuildCache(THECONTEXT*ctx,PASCALSTR*ps);
