@@ -27,7 +27,7 @@
 typedef struct {
 	int        hash;      //simple hash
 	char       *path;     //relative path to file
-	char       *rev;      //revision 
+	long       rev;       //revision 
 	char       *owner;    //object owner (locker)
 }SVNINFOITEM;
 
@@ -73,7 +73,7 @@ class svninfo {
 		 * adds to the end of the list an item
 		 * will not check if item already exists
 		 */
-		void add(char*_path,char*_rev,char*_owner){
+		void add(char*_path,long _rev,char*_owner){
 			if(count+1>=size){
 				//reallocate
 				SVNINFOITEM *ptr_old=ptr;
@@ -85,7 +85,7 @@ class svninfo {
 				delete []ptr_old;
 			}
 			ptr[count].path=scpy(_path);
-			ptr[count].rev=scpy(_rev);
+			ptr[count].rev=_rev;
 			ptr[count].owner=scpy(_owner);
 			ptr[count].hash=hash(ptr[count].path);
 			count++;
@@ -96,12 +96,15 @@ class svninfo {
 			for(int i=0;i<count;i++){
 				if(ptr[i].path)  delete []ptr[i].path;
 				ptr[i].path=NULL;
-				if(ptr[i].rev)  delete []ptr[i].rev;
-				ptr[i].rev=NULL;
+				ptr[i].rev=0;
 				if(ptr[i].owner) delete []ptr[i].owner;
 				ptr[i].owner=NULL;
 			}
 			count=0;
+		}
+		
+		void print(int i){
+			printf("%s, %i, %s\n",ptr[i].path, ptr[i].rev, ptr[i].owner);
 		}
 		
 		/** returns element count */

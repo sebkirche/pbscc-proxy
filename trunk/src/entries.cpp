@@ -19,6 +19,7 @@
 #include <stdio.h>
 #include "easystr.h"
 #include "entries.h"
+#include "mstring.h"
 
 //functions to parse .svn/entries file
 //this version not supported anymore
@@ -103,20 +104,34 @@ bool entries_scan_old(char*entries,ENTRYSCANCALLBACK callback,void*udata){
 
 
 
-bool entries_scan(char*entries,ENTRYSCANCALLBACK callback,void*udata){
+//char*svnwd=NULL for back compatibility
+//if svnwd==NULL then wc is full path to entries file,
+//otherwise wc is a path to workcopy
+bool entries_scan(char*wc,ENTRYSCANCALLBACK callback,void*udata,char *svnwd){
 	char buf[ES_MAX_LEN];
 	SVNENTRY e;
 	
 	bool want_continue=true;
 	int status=0; //0: not init or new; 1:line1; ...
+	mstring entries=mstring();
 	
-	FILE*fent=fopen(entries,"rt");
+	if(svnwd){
+		entries.set(wc);
+		entries.toDir();
+		entries.append(svnwd);
+		entries.toDir();
+		entries.append("entries");
+	}else{
+		entries.set(wc);
+	}
+	
+	FILE*fent=fopen(entries.c_str(),"rt");
 	if(fent){
 		if( fgets( buf, ES_MAX_LEN, fent ) ){
 			if( atol(rtrim(buf))<4 ){
 				//this is an old xml format
 				fclose(fent);
-				return entries_scan_old(entries,callback,udata);
+				return entries_scan_old(entries.c_str(),callback,udata);
 			}
 		}
 		//new format
@@ -132,6 +147,7 @@ bool entries_scan(char*entries,ENTRYSCANCALLBACK callback,void*udata){
 					//start of the new entry
 					//reset the previous entry values
 					memset( &e, 0, sizeof(e) );
+					if(svnwd)e.wcpath=wc;
 					//
 					strncpy(e.name,buf,MAX_PATH);
 					e.name[MAX_PATH]=0;
@@ -166,7 +182,7 @@ bool entries_scan(char*entries,ENTRYSCANCALLBACK callback,void*udata){
 	
 }
 
-bool _entries_repository_callback(SVNENTRY*e,void*udata){
+bool _entries_repository_callback(SVNENTRY*e,void*udata) {
 	if(!e->name[0] && !strcmp(e->kind,"dir") ){
 		strcpy( (char*)udata, e->repository );
 		return false; //don't continue

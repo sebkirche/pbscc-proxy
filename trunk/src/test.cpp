@@ -7,9 +7,11 @@
 
 #include <windows.h>
 #include <stdio.h>
-#include "expat.h"
+//#include "expat.h"
 #include "pbscc.h"
 #include "mstring.h"
+#include "entries.h"
+#include "svninfo.h"
 
 #define BUF_SIZE	512
 #define XML_FMT_INT_MOD "l"
@@ -32,8 +34,32 @@ long outproc (LPCSTR msg, DWORD len) {
 	return 0;
 }
 
+
+bool _entries_scanwc_callback(SVNENTRY*e,void*udata) {
+	svninfo* svni=(svninfo*)udata;
+	if( !strcmp(e->kind,"dir") && e->name[0] ){
+		mstring s=mstring(e->wcpath);
+		s.addPath(e->name);
+		entries_scan(s.c_str(), &_entries_scanwc_callback, (void*) svni , ".svn");
+	}else if( !strcmp(e->kind,"file") ){
+		svni->add(e->name,e->revision,e->lockowner);
+	}
+	//printf("%s %s \t%s\t%i\n",e->wcpath,e->kind,e->name,e->revision);
+	return true;
+}
+
+/** Scans work copy and builds in-memory cache */
+//svni could be a part of the context
+bool ScanWC(THECONTEXT* ctx, svninfo* svni) {
+	return entries_scan(ctx->lpProjName, &_entries_scanwc_callback, (void*) svni , ".svn");
+}
+
+
+
+
 int main(int argc, char *argv[]) {
 	long t=0;
+	int i;
 	LONG lpSccCaps,pnCheckoutCommentLen,pnCommentLen;
 	logFile=stdout;
 	t=timer(t,"start");
@@ -49,7 +75,7 @@ int main(int argc, char *argv[]) {
 		PASCALSTR ps;
 		
 		t=timer(t,"start build cahce");
-		for(int i=0;i<1000;i++){
+		for(i=0;i<5000;i++){
 			strcpy(buf,ctx->lpProjName);
 			ps.ptr=buf;
 			ps.len=strlen(buf);
@@ -57,6 +83,17 @@ int main(int argc, char *argv[]) {
 		}
 		
 		t=timer(t,"end build cahce");
+		
+		svninfo svni=svninfo();
+		
+		for(i=0;i<5000;i++){
+			svni.reset();
+			ScanWC(ctx, &svni);
+		}
+		t=timer(t,"end scan");
+		//for(i=0;i<svni.getCount();i++)svni.print(i);
+		printf("count=%i\n",svni.getCount());
+		
 		
 		SccUninitialize(ctx);
 		
