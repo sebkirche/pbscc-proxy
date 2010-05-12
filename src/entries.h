@@ -18,17 +18,18 @@
 
 
 #define ES_SIMPLE_LEN 100
-#define ES_MAX_LEN 3000
+#define ES_MAX_LEN 4096
 
 
 typedef struct {
 	char name[MAX_PATH+1];
-	char kind[ES_SIMPLE_LEN+1]; //file,dir
-	char url[ES_MAX_LEN+1];// (usually valid only for owner)
-	char repository[ES_MAX_LEN+1]; // (usually valid only for owner)
-	char schedule[ES_SIMPLE_LEN+1]; // (delete,add,replace)
-	long revision; //(usually valid for files)
-	char lockowner[ES_SIMPLE_LEN+1]; // (delete,add,replace)
+	char kind[ES_SIMPLE_LEN+1];        //file,dir
+	char url[ES_MAX_LEN+1];            // (usually valid only for owner)
+	char repository[ES_MAX_LEN+1];     // (usually valid only for owner)
+	char schedule[ES_SIMPLE_LEN+1];    // (delete,add,replace)
+	long revision;                     // (usually valid for files)
+	char lockowner[ES_SIMPLE_LEN+1];   // (delete,add,replace)
+	char * wcpath;                     // path to work copy. you should not modify this.
 }SVNENTRY;
 
 
@@ -39,6 +40,9 @@ typedef bool  (*ENTRYSCANCALLBACK)(SVNENTRY*e,void*udata);
 
 
 //scans the entries file and calls callback function for each entry
-bool entries_scan(char*entries,ENTRYSCANCALLBACK callback,void*udata);
+//char*svnwd=NULL for back compatibility
+//if svnwd==NULL then entries is full path to entries file,
+//otherwise entries is a path to workcopy
+bool entries_scan(char*entries,ENTRYSCANCALLBACK callback,void*udata,char*svnwd=NULL);
 //returns repository from the entries file
 bool entries_repository(char*entries,char*buf,int buflen);

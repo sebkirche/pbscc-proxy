@@ -160,6 +160,15 @@ class mstring {
 			return length;
 		}
 
+		void toDir(){
+			if(length>0 && ptr[length-1]!='/' && ptr[length-1]!='\\' )append(_T("\\"));
+		}
+		
+		void addPath(const TCHAR * c){
+			toDir();
+			append(c);
+		}
+		
 		void rtrim(){
 			if(length==0)return;
 			int len=length;
@@ -167,6 +176,17 @@ class mstring {
 			for(int i=length-1; i>=0 && _tcschr(space,ptr[i]) ; i--)
 				ptr[i]=0;
 			length=_tcslen(ptr);
+		}
+		/**
+		 * Truncates string to specified length, returns the new length.
+		 */
+		long trunc(long newlen){
+			if(newlen>length){
+				if(newlen<0)ASSERT(true);
+				length=newlen;
+				ptr[length]=0;
+			}
+			return length;
 		}
 
 		
