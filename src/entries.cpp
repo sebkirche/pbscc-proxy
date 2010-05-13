@@ -117,10 +117,8 @@ bool entries_scan(char*wc,ENTRYSCANCALLBACK callback,void*udata,char *svnwd){
 	
 	if(svnwd){
 		entries.set(wc);
-		entries.toDir();
-		entries.append(svnwd);
-		entries.toDir();
-		entries.append("entries");
+		entries.addPath(svnwd);
+		entries.addPath("entries");
 	}else{
 		entries.set(wc);
 	}
