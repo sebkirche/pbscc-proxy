@@ -88,6 +88,16 @@ class mstring {
 			return ptr;
 		}
 		
+		/** returns the copy of the buffer allocated with new[] operator
+		 *  you must free this allocated memory with delete[] operator
+		 */
+		TCHAR * c_copy(){
+			if(ptr==NULL)return NULL;
+			TCHAR *cpy=new TCHAR[length+1];
+			_tcscpy(cpy,ptr);
+			return cpy;
+		}
+		
 		//flag could be NORM_IGNORECASE
 		bool startsWith(TCHAR *c, int flag=0){
 			int ret;
@@ -105,7 +115,7 @@ class mstring {
 			return ptr[i];
 		}
 
-		void set(TCHAR * c){
+		mstring * set(TCHAR * c){
 			if(c){
 				long i=_tcslen(c);
 				realloc(i+1);
@@ -122,6 +132,7 @@ class mstring {
 				allocated=0;
 				//printf("set > %s<<\n",ptr);
 			}
+			return this;
 		}
 		
 		bool getenv(TCHAR * name){
@@ -137,56 +148,61 @@ class mstring {
 			return true;
 		}
 		
-		void append(const TCHAR * c){
-			if(!c)return;
+		mstring* append(const TCHAR * c){
+			if(!c)return this;
 			long i=_tcslen(c);
 			realloc(length+i+1);
 			_tcscpy(ptr+length,c);
 			length+=i;
 			//printf("append > %s<<\n",ptr);
+			return this;
 		}
 		
-		void append(const TCHAR * c,int len){
-			if(!c || !len)return;
+		mstring* append(const TCHAR * c,int len){
+			if(!c || !len)return this;
 			realloc(length+len+1);
 			_tcsncpy(ptr+length,c,len);
 			length+=len;
 			ptr[length]=0;
 			length=_tcslen(ptr);
 			//printf("append > %s<<\n",ptr);
+			return this;
 		}
 		
 		long len(){
 			return length;
 		}
 
-		void toDir(){
+		mstring* toDir(){
 			if(length>0 && ptr[length-1]!='/' && ptr[length-1]!='\\' )append(_T("\\"));
+			return this;
 		}
 		
-		void addPath(const TCHAR * c){
+		mstring* addPath(const TCHAR * c){
 			toDir();
 			append(c);
+			return this;
 		}
 		
-		void rtrim(){
-			if(length==0)return;
+		mstring* rtrim(){
+			if(length==0)return this;
 			int len=length;
 			TCHAR*space=_T(" \t\r\n");
 			for(int i=length-1; i>=0 && _tcschr(space,ptr[i]) ; i--)
 				ptr[i]=0;
 			length=_tcslen(ptr);
+			return this;
 		}
 		/**
 		 * Truncates string to specified length, returns the new length.
 		 */
-		long trunc(long newlen){
+		mstring* trunc(long newlen){
 			if(newlen>length){
 				if(newlen<0)ASSERT(true);
 				length=newlen;
 				ptr[length]=0;
 			}
-			return length;
+			return this;
 		}
 
 		

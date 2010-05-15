@@ -19,6 +19,7 @@
 #include <stdio.h>
 #include "scc.h"
 #include "mstring.h"
+#include "svninfo.h"
 
 #define PBSCC_REVLEN  100
 //#define PBSCC_VERLEN  64
@@ -90,6 +91,8 @@ typedef struct {
 	CHAR          uid[PBSCC_UID+1];
 	CHAR          pwd[PBSCC_UID+1];
 	HWND          parent;
+	svninfo       *svni;
+	CHAR          svnwd[SCC_USER_LEN];  //svn work directory. by default ".svn"
 }THECONTEXT;
 
 
