@@ -35,31 +35,12 @@ long outproc (LPCSTR msg, DWORD len) {
 }
 
 
-bool _entries_scanwc_callback(SVNENTRY*e,void*udata) {
-	THECONTEXT* ctx=(THECONTEXT*)udata;
-	if( !strcmp(e->kind,"dir") && e->name[0] ){
-		mstring s=mstring(e->wcpath);
-		s.addPath(e->name);
-		entries_scan(s.c_str(), &_entries_scanwc_callback, udata , ctx->svnwd);
-	}else if( !strcmp(e->kind,"file") ){
-		ctx->svni->add(ctx->lpProjName,e->wcpath,e->name,e->revision,e->lockowner);
-	}
-	return true;
-}
-
-/** Scans work copy and builds in-memory cache */
-//svni could be a part of the context
-bool ScanWC(THECONTEXT* ctx) {
-	ctx->svni->reset();
-	return entries_scan(ctx->lpProjName, &_entries_scanwc_callback, (void*) ctx , ctx->svnwd);
-}
-
-
 
 
 int main(int argc, char *argv[]) {
 	long t=0;
 	int i;
+	
 	LONG lpSccCaps,pnCheckoutCommentLen,pnCommentLen;
 	logFile=stdout;
 	t=timer(t,"start");
