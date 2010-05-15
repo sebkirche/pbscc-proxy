@@ -36,22 +36,22 @@ long outproc (LPCSTR msg, DWORD len) {
 
 
 bool _entries_scanwc_callback(SVNENTRY*e,void*udata) {
-	svninfo* svni=(svninfo*)udata;
+	THECONTEXT* ctx=(THECONTEXT*)udata;
 	if( !strcmp(e->kind,"dir") && e->name[0] ){
 		mstring s=mstring(e->wcpath);
 		s.addPath(e->name);
-		entries_scan(s.c_str(), &_entries_scanwc_callback, (void*) svni , ".svn");
+		entries_scan(s.c_str(), &_entries_scanwc_callback, udata , ctx->svnwd);
 	}else if( !strcmp(e->kind,"file") ){
-		svni->add(e->name,e->revision,e->lockowner);
+		ctx->svni->add(ctx->lpProjName,e->wcpath,e->name,e->revision,e->lockowner);
 	}
-	//printf("%s %s \t%s\t%i\n",e->wcpath,e->kind,e->name,e->revision);
 	return true;
 }
 
 /** Scans work copy and builds in-memory cache */
 //svni could be a part of the context
-bool ScanWC(THECONTEXT* ctx, svninfo* svni) {
-	return entries_scan(ctx->lpProjName, &_entries_scanwc_callback, (void*) svni , ".svn");
+bool ScanWC(THECONTEXT* ctx) {
+	ctx->svni->reset();
+	return entries_scan(ctx->lpProjName, &_entries_scanwc_callback, (void*) ctx , ctx->svnwd);
 }
 
 
@@ -71,6 +71,7 @@ int main(int argc, char *argv[]) {
 		SccInitialize( (LPVOID *) &ctx, NULL, "caller","scc", &lpSccCaps, "aux", &pnCheckoutCommentLen, &pnCommentLen);
 		SccOpenProject(ctx, NULL, "root", wc, "pb-workspace", "aux", "comment", outproc,0);
 		
+		/*
 		char buf[5000]; //TODO: dangerous code
 		PASCALSTR ps;
 		
@@ -83,16 +84,18 @@ int main(int argc, char *argv[]) {
 		}
 		
 		t=timer(t,"end build cahce");
-		
-		svninfo svni=svninfo();
+		*/
+		t=timer(t,"start scan");
 		
 		for(i=0;i<5000;i++){
-			svni.reset();
-			ScanWC(ctx, &svni);
+			ScanWC(ctx);
 		}
 		t=timer(t,"end scan");
-		//for(i=0;i<svni.getCount();i++)svni.print(i);
-		printf("count=%i\n",svni.getCount());
+		for(i=0;i<ctx->svni->getCount();i++)ctx->svni->print(ctx->svni->get(i));
+		printf("count=%i\n\n\n",ctx->svni->getCount());
+		
+		SVNINFOITEM*e=ctx->svni->get("d:\\xxx","d:\\xxx\\test2\\src\\libs\\lib1\\pbtestx.sra");
+		ctx->svni->print(e);
 		
 		
 		SccUninitialize(ctx);

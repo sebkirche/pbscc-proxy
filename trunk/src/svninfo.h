@@ -19,10 +19,16 @@
  * this class defines simple class to hold svn object list
  */
 
+ 
+ 
+#include "mstring.h"
+
 #ifndef __SVNINFO_H__
 #define __SVNINFO_H__
 //initial size
 #define __SVNINFO_H__INITSIZE	5000
+
+
 
 typedef struct {
 	int        hash;      //simple hash
@@ -37,12 +43,8 @@ class svninfo {
 		SVNINFOITEM* ptr;
 		long size;         
 		long count;
+		mstring*buf;
 		
-		char*scpy(char*c){
-			if(c==NULL)return NULL;
-			char*cpy=new char[strlen(c)+1];
-			return strcpy(cpy,c);
-		}
 		int hash(char*c){
 			int h=0;
 			char*ch="_";
@@ -53,6 +55,21 @@ class svninfo {
 			}
 			return h;
 		}
+		/** returns relative path of the _path comparing to _root */
+		char * relativePath(char*_root,char*_path){
+			int len=strlen(_root); //length of the _root must be less or equal to _path
+			if(len>0) {
+				if(_root[len-1]=='\\' || _root[len-1]=='/')len--;
+				if( CompareString(LOCALE_USER_DEFAULT,NORM_IGNORECASE,_root,len,_path,len)==2 ){
+					if(!_path[len]) return _path+len;
+					if(_path[len]=='\\' || _path[len]=='/' )return _path+len+1;
+				}
+			}
+			//just return the full path
+			return _path;
+		}
+		
+		
 	public:
 		
 		svninfo(){
@@ -60,9 +77,11 @@ class svninfo {
 			count = 0;
 			ptr   = new SVNINFOITEM[size];
 			memset( ptr, 0, size*sizeof(SVNINFOITEM) );
+			buf=new mstring();
 		}
 		
 		~svninfo(){
+			delete buf;
 			reset();
 			delete []ptr;
 			ptr=NULL;
@@ -71,9 +90,14 @@ class svninfo {
 		}
 		/**
 		 * adds to the end of the list an item
-		 * will not check if item already exists
+		 * will not check if item already exists 
+		 * @param _root: the base directory normally it's a root of work directory (used to calculate relative path)
+		 * @param _path: the path to the element we want to add 
+		 * @param _name: the name of the element we want to add (could be empty if _path contains the full path) 
+		 * @param _rev : the revision of the element
+		 * @param _owner: the lock owner of the element
 		 */
-		void add(char*_path,long _rev,char*_owner){
+		void add(char*_root,char*_path,char*_name,long _rev,char*_owner){
 			if(count+1>=size){
 				//reallocate
 				SVNINFOITEM *ptr_old=ptr;
@@ -84,9 +108,11 @@ class svninfo {
 				memcpy(ptr, ptr_old, size_old*sizeof(SVNINFOITEM));
 				delete []ptr_old;
 			}
-			ptr[count].path=scpy(_path);
+			_path=relativePath(_root,_path);
+			
+			ptr[count].path=buf->set(_path)->addPath(_name)->c_copy();
 			ptr[count].rev=_rev;
-			ptr[count].owner=scpy(_owner);
+			ptr[count].owner=buf->set(_owner)->c_copy();
 			ptr[count].hash=hash(ptr[count].path);
 			count++;
 		}
@@ -103,8 +129,9 @@ class svninfo {
 			count=0;
 		}
 		
-		void print(int i){
-			printf("%s, %i, %s\n",ptr[i].path, ptr[i].rev, ptr[i].owner);
+		void print(SVNINFOITEM*e){
+			if(!e)printf("(null)\n");
+			else printf("%s, %i, %s\n",e->path, e->rev, e->owner);
 		}
 		
 		/** returns element count */
@@ -117,7 +144,7 @@ class svninfo {
 			return &ptr[i];
 		}
 		
-		/** returns svn element by path element */
+		/** returns svn element by relative path */
 		SVNINFOITEM* get(char*_path){
 			int h=hash(_path);
 			for(int i=0;i<count;i++) {
@@ -128,6 +155,17 @@ class svninfo {
 			return NULL;
 		}
 		
+		/** returns svn element by absolute path with root specified */
+		SVNINFOITEM* get(char*_root,char*_path){
+			_path=relativePath(_root,_path);
+			int h=hash(_path);
+			for(int i=0;i<count;i++) {
+				if( ptr[i].hash==h ){
+					if ( !lstrcmpi( _path, ptr[i].path ) )return &ptr[i];
+				}
+			}
+			return NULL;
+		}
 	
 };	
 

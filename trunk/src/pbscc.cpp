@@ -26,6 +26,7 @@
 #include "entries.h"
 #include "filecmp.h"
 #include "conproc.h"
+#include "svninfo.h"
 #include "tmp\version.h"
 #include "FCNTL.H"
 
@@ -668,6 +669,16 @@ SCCEXTERNC SCCRTN EXTFUN SccInitialize(LPVOID * ppContext, HWND hWnd, LPCSTR lpC
 		if(RegQueryValueEx(rkey,"checkout.lock",NULL,&type,(LPBYTE)buf,&buflen)==ERROR_SUCCESS){
 			ctx->doLock=(atol(buf)!=0);
 		}
+		
+		buflen=sizeof(buf);
+		if(RegQueryValueEx(rkey,"svn.work",NULL,&type,(LPBYTE)buf,&buflen)==ERROR_SUCCESS){
+			strncpy(ctx->svnwd,buf,SCC_USER_LEN);
+			ctx->svnwd[SCC_USER_LEN-1]=0;
+		}else{
+			strcpy(ctx->svnwd,".svn"); //get default value
+		}
+		
+		
 		RegCloseKey(rkey);
 	}
 	
@@ -683,12 +694,14 @@ SCCEXTERNC SCCRTN EXTFUN SccInitialize(LPVOID * ppContext, HWND hWnd, LPCSTR lpC
 	
 	log("\t cache.ttl.milli: %i\n",ctx->cacheTtlMs);
 	log("\t checkout.lock  : %i\n",ctx->doLock);
-	log("\t svn out file   : %s \n",ctx->lpOutTmp);
-	log("\t svn err file   : %s \n",ctx->lpErrTmp);
-	log("\t svn msg file   : %s \n",ctx->lpMsgTmp);
+	log("\t svn work dir   : %s\n",ctx->svnwd);
+	log("\t out pipe       : %s\n",ctx->lpOutTmp);
+	log("\t err pipe       : %s\n",ctx->lpErrTmp);
+	log("\t msg pipe       : %s\n",ctx->lpMsgTmp);
 	
 	ctx->pipeOut=new mstring();
 	ctx->pipeErr=new mstring();
+	ctx->svni=new svninfo();
 	
 	ctx->parent=hWnd;
 	
@@ -709,6 +722,7 @@ SCCEXTERNC SCCRTN EXTFUN SccUninitialize(LPVOID pContext){
 	
 	delete ctx->pipeOut;
 	delete ctx->pipeErr;
+	delete ctx->svni;
 
 
 	delete pContext;
