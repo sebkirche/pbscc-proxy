@@ -84,7 +84,8 @@ typedef struct {
 	CHAR          lpErrTmp[MAXFULLPATH]; //the path where this context will store svn stderr
 	CHAR          lpMsgTmp[MAXFULLPATH]; //the path where this context will store user message
 //	bool          noDDB; //is true if no ddb is set in registry
-	bool          doLock; //info from registry: shows if we want to lock on checkout.
+//	bool          doLock; //info from registry: shows if we want to lock on checkout.
+	int           lockStrategy; //info from registry: shows if we want to manage locks.
 	unsigned long cacheTtlMs;  //info from registry: time to live for cache in milliseconds
 	mstring*      pipeOut;     //here we are storing stdout of the child process
 	mstring*      pipeErr;     //here we are storing stderr of the child process
@@ -95,12 +96,26 @@ typedef struct {
 	CHAR          svnwd[SCC_USER_LEN];  //svn work directory. by default ".svn"
 }THECONTEXT;
 
+#define LOCKSTRATEGY_LOCK_GET  1
+#define LOCKSTRATEGY_LOCK_PUT  2
+#define LOCKSTRATEGY_PROP_GET  4
+#define LOCKSTRATEGY_PROP_PUT  8
 
+// 0 1 2 3 4 5 6 7 8 9
+// | | | |
+// | | | +- put properties
+// | | +--- get properties
+// | +----- put locks
+// +------- get locks
+
+
+//TODO: DEPRECATED
 typedef struct {
 	int    len;
 	char*  ptr;
 } PASCALSTR;
 
+//TODO: DEPRECATED
 #define EOPS(x)	(x->ptr+x->len)
 
 
@@ -117,5 +132,8 @@ bool _loginscc(THECONTEXT*ctx);
 void _msg(THECONTEXT*ctx,char * s);
 extern HINSTANCE	hInstance;
 
-
+//TODO: DEPRECATED
 BOOL BuildCache(THECONTEXT*ctx,PASCALSTR*ps);
+
+bool ScanWC(THECONTEXT* ctx);
+

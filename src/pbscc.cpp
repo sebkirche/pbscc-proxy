@@ -35,8 +35,8 @@ FILE		*logFile=NULL;
 CHAR		*gpSccName="PBSCC Proxy";
 
 HWND		consoleHwnd=NULL;
-CHAR        filesubst[4000];
-CHAR        _svn[11]=".svn"; //svn work directory
+//CHAR        filesubst[4000];
+//CHAR        _svn[11]=".svn"; //svn work directory
 
 void log(const char* szFmt,...) {
 	if(logFile){
@@ -129,8 +129,7 @@ void _msg(THECONTEXT*ctx,char * s){
 }
 
 
-
-
+//TODO: THERE is a bug. If in we have a multiline property this will not work
 BOOL GetProperty(char*fname,char*pname,char*pvalue,int pvlen){
 	char c;
 	int len;
@@ -155,6 +154,46 @@ BOOL GetProperty(char*fname,char*pname,char*pvalue,int pvlen){
 	}
 	return b;
 }
+
+
+/** new work-copy scan callback */
+bool _entries_scanwc_callback(SVNENTRY*e,void*udata) {
+	THECONTEXT* ctx=(THECONTEXT*)udata;
+	if( !strcmp(e->kind,"dir") && e->name[0] ){
+		mstring s=mstring(e->wcpath);
+		s.addPath(e->name);
+		entries_scan(s.c_str(), &_entries_scanwc_callback, udata , ctx->svnwd);
+	}else if( !strcmp(e->kind,"file") ){
+		if( ctx->lockStrategy & LOCKSTRATEGY_PROP_GET ){
+			if( ctx->lockStrategy & LOCKSTRATEGY_LOCK_GET && e->lockowner[0] ){
+				//we already got lock information. nothing to do
+			}else{
+				//let's get lockby property
+				static mstring propPath=mstring();
+				//build properties file path
+				propPath.set(e->wcpath);
+				propPath.addPath(ctx->svnwd);
+				propPath.addPath("prop-base");
+				propPath.addPath(e->name);
+				propPath.append(".svn-base");
+				
+				propPath.sprintf("%s\\%s",);
+				GetProperty(propPath.c_str(),"lockby",e->lockowner,ES_SIMPLE_LEN);
+			}
+		}
+		ctx->svni->add(ctx->lpProjName,e->wcpath,e->name,e->revision,e->lockowner);
+	}
+	return true;
+}
+
+/** Scans work copy and builds in-memory cache */
+//svni could be a part of the context
+bool ScanWC(THECONTEXT* ctx) {
+	ctx->svni->reset();
+	return entries_scan(ctx->lpProjName, &_entries_scanwc_callback, (void*) ctx , ctx->svnwd);
+}
+
+
 
 typedef struct {
 	PASCALSTR*ps;
