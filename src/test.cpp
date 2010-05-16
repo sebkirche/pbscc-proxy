@@ -50,27 +50,14 @@ int main(int argc, char *argv[]) {
 		THECONTEXT*ctx;
 		
 		SccInitialize( (LPVOID *) &ctx, NULL, "caller","scc", &lpSccCaps, "aux", &pnCheckoutCommentLen, &pnCommentLen);
+		t=timer(t,"SccInitialize end");
 		SccOpenProject(ctx, NULL, "root", wc, "pb-workspace", "aux", "comment", outproc,0);
+		t=timer(t,"SccOpenProject end");
 		
-		/*
-		char buf[5000]; //TODO: dangerous code
-		PASCALSTR ps;
 		
-		t=timer(t,"start build cahce");
-		for(i=0;i<5000;i++){
-			strcpy(buf,ctx->lpProjName);
-			ps.ptr=buf;
-			ps.len=strlen(buf);
-			BuildCache(ctx,&ps);
-		}
-		
-		t=timer(t,"end build cahce");
-		*/
-		t=timer(t,"start scan");
-		
-		for(i=0;i<5000;i++){
-			ScanWC(ctx);
-		}
+//		for(i=0;i<5000;i++){
+//			ScanWC(ctx);
+//		}
 		t=timer(t,"end scan");
 		for(i=0;i<ctx->svni->getCount();i++)ctx->svni->print(ctx->svni->get(i));
 		printf("count=%i\n\n\n",ctx->svni->getCount());
