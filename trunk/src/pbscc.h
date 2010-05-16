@@ -112,16 +112,6 @@ typedef struct {
 // local locks always will be taken
 
 
-//TODO: DEPRECATED
-typedef struct {
-	int    len;
-	char*  ptr;
-} PASCALSTR;
-
-//TODO: DEPRECATED
-#define EOPS(x)	(x->ptr+x->len)
-
-
 #define DELAYFORNEWCOMMENT 2999
 //#define DELAYFORUPDATE 180000
 //#define DEFDDBITEM "(Anomalie ou evolution sans DDB)"
@@ -134,9 +124,6 @@ bool ShowSysError(char*info,int err=0);
 bool _loginscc(THECONTEXT*ctx);
 void _msg(THECONTEXT*ctx,char * s);
 extern HINSTANCE	hInstance;
-
-//TODO: DEPRECATED
-BOOL BuildCache(THECONTEXT*ctx,PASCALSTR*ps);
 
 bool ScanWC(THECONTEXT* ctx);
 

@@ -676,15 +676,16 @@ SCCEXTERNC SCCRTN EXTFUN SccOpenProject(LPVOID pContext,HWND hWnd, LPSTR lpUser,
 			LOCKSTRATEGY_LOCK_PUT|LOCKSTRATEGY_PROP_GET, 
 			buf.set(ctx->lpProjName)->addPath("scc.ini")->c_str() );
 	
-	_msg(ctx,buf.sprintf("version %s built on %s",PROJECT_VER,PROJECT_DATE)->c_str());
-	_msg(ctx,ctx->svnwd);
+	_msg(ctx,buf.set(NULL)->sprintf("version %s built on %s",PROJECT_VER,PROJECT_DATE)->c_str());
+	_msg(ctx,buf.set(NULL)->sprintf("svn work dir: %s",ctx->svnwd)->c_str() );
 	
 	{
 		buf.set("lock.strategy : get local lock"); //always present
 		if(ctx->lockStrategy&LOCKSTRATEGY_LOCK_GET)buf.append(", get server lock");
 		if(ctx->lockStrategy&LOCKSTRATEGY_LOCK_PUT)buf.append(", set lock");
 		if(ctx->lockStrategy&LOCKSTRATEGY_PROP_GET)buf.append(", get prop");
-		if(ctx->lockStrategy&LOCKSTRATEGY_PROP_GET)buf.append(", set prop");
+		if(ctx->lockStrategy&LOCKSTRATEGY_PROP_PUT)buf.append(", set prop");
+		_msg(ctx,buf.c_str() );
 	}
 	
 	
