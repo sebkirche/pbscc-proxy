@@ -19,7 +19,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-bool filecmp(char*name1,char*name2) {
+bool filecmp(const char*name1,const char*name2) {
 	FILE *fp1, *fp2;
 	int ch1=1;
 	int ch2=2;

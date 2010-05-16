@@ -65,7 +65,8 @@ bool entries_scan_old(char*entries,ENTRYSCANCALLBACK callback,void*udata){
 					c+=15;
 					p=strchr(c,'"');
 					if(p)p[0]=0;
-					e.revision=atol(c);
+					strncpy(e.revision,c,ES_SIMPLE_LEN);
+					e.revision[ES_SIMPLE_LEN]=0;
 				}else if(!strncmp(c,"name=\"",6)){
 					c+=6;
 					p=strchr(c,'"');
@@ -163,7 +164,7 @@ bool entries_scan(char*wc,ENTRYSCANCALLBACK callback,void*udata,char *svnwd){
 					strncpy(e.schedule,buf,ES_SIMPLE_LEN);
 					break;
 				case 10: //revision
-					e.revision=atol( buf );
+					strncpy(e.revision,buf,ES_SIMPLE_LEN);
 					break;
 				case 28: //lock owner
 					strncpy(e.lockowner,buf,ES_SIMPLE_LEN);

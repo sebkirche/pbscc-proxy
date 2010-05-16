@@ -33,7 +33,7 @@
 typedef struct {
 	int        hash;      //simple hash
 	char       *path;     //relative path to file
-	long       rev;       //revision 
+	char       *rev;       //revision 
 	char       *owner;    //object owner (locker)
 }SVNINFOITEM;
 
@@ -45,7 +45,7 @@ class svninfo {
 		long count;
 		mstring*buf;
 		
-		int hash(char*c){
+		int hash(const char*c){
 			int h=0;
 			char*ch="_";
 			for (int i = 0; c[i]; i++) {
@@ -56,7 +56,7 @@ class svninfo {
 			return h;
 		}
 		/** returns relative path of the _path comparing to _root */
-		char * relativePath(char*_root,char*_path){
+		const char * relativePath(const char*_root,const char*_path){
 			int len=strlen(_root); //length of the _root must be less or equal to _path
 			if(len>0) {
 				if(_root[len-1]=='\\' || _root[len-1]=='/')len--;
@@ -81,9 +81,9 @@ class svninfo {
 		}
 		
 		~svninfo(){
-			delete buf;
 			reset();
 			delete []ptr;
+			delete buf;
 			ptr=NULL;
 			count=0;
 			size=0;
@@ -97,7 +97,7 @@ class svninfo {
 		 * @param _rev : the revision of the element
 		 * @param _owner: the lock owner of the element
 		 */
-		void add(char*_root,char*_path,char*_name,long _rev,char*_owner){
+		void add(const char*_root,const char*_path,const char*_name,const char*_rev,const char*_owner){
 			if(count+1>=size){
 				//reallocate
 				SVNINFOITEM *ptr_old=ptr;
@@ -111,7 +111,7 @@ class svninfo {
 			_path=relativePath(_root,_path);
 			
 			ptr[count].path=buf->set(_path)->addPath(_name)->c_copy();
-			ptr[count].rev=_rev;
+			ptr[count].rev=buf->set(_rev)->c_copy();
 			ptr[count].owner=buf->set(_owner)->c_copy();
 			ptr[count].hash=hash(ptr[count].path);
 			count++;
@@ -122,7 +122,8 @@ class svninfo {
 			for(int i=0;i<count;i++){
 				if(ptr[i].path)  delete []ptr[i].path;
 				ptr[i].path=NULL;
-				ptr[i].rev=0;
+				if(ptr[i].rev)  delete []ptr[i].rev;
+				ptr[i].rev=NULL;
 				if(ptr[i].owner) delete []ptr[i].owner;
 				ptr[i].owner=NULL;
 			}
@@ -144,7 +145,7 @@ class svninfo {
 			return &ptr[i];
 		}
 		
-		/** returns svn element by relative path */
+		/** returns svn element by relative path 
 		SVNINFOITEM* get(char*_path){
 			int h=hash(_path);
 			for(int i=0;i<count;i++) {
@@ -154,9 +155,10 @@ class svninfo {
 			}
 			return NULL;
 		}
+		*/
 		
 		/** returns svn element by absolute path with root specified */
-		SVNINFOITEM* get(char*_root,char*_path){
+		SVNINFOITEM* get(const char*_root, const char*_path){
 			_path=relativePath(_root,_path);
 			int h=hash(_path);
 			for(int i=0;i<count;i++) {

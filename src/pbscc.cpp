@@ -35,8 +35,6 @@ FILE		*logFile=NULL;
 CHAR		*gpSccName="PBSCC Proxy";
 
 HWND		consoleHwnd=NULL;
-//CHAR        filesubst[4000];
-//CHAR        _svn[11]=".svn"; //svn work directory
 
 void log(const char* szFmt,...) {
 	if(logFile){
@@ -94,13 +92,14 @@ BOOL APIENTRY DllMain(HINSTANCE hInst, DWORD ul_reason_for_call, void* lpReserve
 	return TRUE;
 } 
 
-//TODO: dangerous code
 //substitutes the local file path by project path
 //returns reference to the internal buffer with substituted path
-char * _subst(THECONTEXT*ctx,char * file){
-	strcpy(filesubst,ctx->lpProjName);
-	strcpy(filesubst+ctx->cbProjName,file+ctx->cbProjPath);
-	return filesubst;
+char * _subst(THECONTEXT*ctx,const char * file){
+	static mstring subst=mstring();
+	
+	subst.set(ctx->lpProjName);
+	subst.append(file+ctx->cbProjPath);
+	return subst.c_str();
 }
 
 
@@ -109,27 +108,11 @@ char * _subst(THECONTEXT*ctx,char * file){
 void _msg(THECONTEXT*ctx,char * s){
 	if(ctx->lpOutProc) {
 		ctx->lpOutProc(s,strlen(s));
-/*		
-		char * ss=s;
-		char * se=ss;
-		
-		while( ss[0] ){
-			//find end of string
-			while ( se[0]!=0 && se[0]!='\n' && se[0]!='\r' ) se++;
-			//if it's diff from string start, send it to client
-			if( se!=ss ){
-				ctx->lpOutProc(ss,se - ss);
-			}
-			//find start of the next string
-			while ( se[0]=='\n' || se[0]=='\r' ) se++;
-			ss=se;
-		}
-*/
 	}
 }
 
 
-//TODO: THERE is a bug. If in we have a multiline property this will not work
+//TODO: THERE is a bug. If in we have a multiline property, this will not work
 BOOL GetProperty(char*fname,char*pname,char*pvalue,int pvlen){
 	char c;
 	int len;
@@ -164,23 +147,19 @@ bool _entries_scanwc_callback(SVNENTRY*e,void*udata) {
 		s.addPath(e->name);
 		entries_scan(s.c_str(), &_entries_scanwc_callback, udata , ctx->svnwd);
 	}else if( !strcmp(e->kind,"file") ){
-		if( ctx->lockStrategy & LOCKSTRATEGY_PROP_GET ){
-			if( ctx->lockStrategy & LOCKSTRATEGY_LOCK_GET && e->lockowner[0] ){
-				//we already got lock information. nothing to do
-			}else{
-				//let's get lockby property
-				static mstring propPath=mstring();
-				//build properties file path
-				propPath.set(e->wcpath);
-				propPath.addPath(ctx->svnwd);
-				propPath.addPath("prop-base");
-				propPath.addPath(e->name);
-				propPath.append(".svn-base");
-				
-				propPath.sprintf("%s\\%s",);
-				GetProperty(propPath.c_str(),"lockby",e->lockowner,ES_SIMPLE_LEN);
-			}
+		//by default local locks are filled from entries
+		//only if it's not filled we try to get it in another way
+		if( ctx->lockStrategy & LOCKSTRATEGY_LOCK_GET && !e->lockowner[0] ){
+			//TODO: get server locks not implemented yet
 		}
+		if( ctx->lockStrategy & LOCKSTRATEGY_PROP_GET && !e->lockowner[0]){
+			//let's get lockby property
+			static mstring propPath=mstring();
+			//build properties file path
+			propPath.set(e->wcpath)->addPath(ctx->svnwd)->addPath("prop-base")->addPath(e->name)->append(".svn-base");
+			GetProperty(propPath.c_str(),"lockby",e->lockowner,ES_SIMPLE_LEN);
+		}
+		//add information into in-memory cache
 		ctx->svni->add(ctx->lpProjName,e->wcpath,e->name,e->revision,e->lockowner);
 	}
 	return true;
@@ -194,97 +173,11 @@ bool ScanWC(THECONTEXT* ctx) {
 }
 
 
-
-typedef struct {
-	PASCALSTR*ps;
-	long prevrev;
-} BUILDCACHE;
-
-bool _BuildCacheCallback(SVNENTRY*e,void*udata){
-	BUILDCACHE *d=(BUILDCACHE *)udata;
-	char lockby[SCC_USER_LEN+1]="";
-	if(e->revision>0){
-		if(d->prevrev < e->revision){
-			sprintf(EOPS(d->ps),"\\%s\\prop-base\\%s.svn-base",_svn,e->name);
-			GetProperty(d->ps->ptr,"lockby",lockby,sizeof(lockby));
-			sprintf(EOPS(d->ps),"\\%s\\cache\\%s.cch",_svn,e->name);
-			if( strcmp(e->schedule,"delete") ){
-				FILE*fcch=fopen(d->ps->ptr,"wt");
-				if(fcch){
-					fprintf(fcch,"%d\n%s\n",e->revision, lockby);
-					fflush(fcch);
-					fclose(fcch);
-				}
-			}else{
-				DeleteFile(d->ps->ptr);
-			}
-		}
-	}
-	return true;
-}
-
-BOOL BuildCache(THECONTEXT*ctx,PASCALSTR*ps){
-	WIN32_FIND_DATA ffd;
-	HANDLE ffh;
-	FILE*fent;
-	BUILDCACHE bc;
-	char rev[PBSCC_REVLEN]="";
-	
-	//log("\tBuildCache %5d %s\n",ps->len, ps->ptr);
-	sprintf(EOPS(ps),"\\%s",_svn);
-	if(!access(ps->ptr,0)){
-		strcat(EOPS(ps),"\\cache");
-		if(access(ps->ptr,0)){
-			if(!CreateDirectory(ps->ptr,NULL)){
-				_msg(ctx,"can't create cache directory");
-				_msg(ctx,ps->ptr);
-				log("Error: can't create cache directory \"%s\"\n",ps->ptr);
-				return false;
-			}
-		}
-		//get the previous folder revision
-		bc.prevrev=0;
-		bc.ps=ps;
-		strcat(EOPS(ps),"\\.cch");
-		fent=fopen(ps->ptr,"rt");
-		if(fent){
-			fgets(rev,sizeof(rev),fent);
-			rtrim(rev);
-			bc.prevrev=atol(rev);
-			fclose(fent);
-		}
-		sprintf(EOPS(ps),"\\%s\\entries",_svn);
-		if(!entries_scan(ps->ptr, &_BuildCacheCallback, (void*) &bc )){
-			_msg(ctx,"can't find entries file");
-			_msg(ctx,ps->ptr);
-			log("Error: can't find entries file \"%s\"\n",ps->ptr);
-			return false;
-		}
-	}else log("\tnot found: %s\n",ps->ptr);
-	
-	strcpy(EOPS(ps),"\\*");
-	ffh=FindFirstFile(ps->ptr,&ffd);
-	if(ffh!=INVALID_HANDLE_VALUE){
-		do{
-			if(ffd.dwFileAttributes&FILE_ATTRIBUTE_DIRECTORY && strcmp(ffd.cFileName,_svn) && strcmp(ffd.cFileName,".") && strcmp(ffd.cFileName,"..")){
-				strcpy(EOPS(ps)+1,ffd.cFileName);
-				PASCALSTR ps2;
-				ps2.ptr=ps->ptr;
-				ps2.len=strlen(ps->ptr);
-				BuildCache(ctx,&ps2);
-			}
-		}while(FindNextFile(ffh,&ffd));
-		FindClose(ffh);
-	}
-	return true;
-	
-}
-
 bool _files2list(THECONTEXT*ctx, LONG nFiles, LPCSTR* lpFileNames){
 	FILE*f=fopen(ctx->lpTargetsTmp,"wt");
 	if(f){
 		for(int i=0;i<nFiles;i++){
-			fputs( _subst( ctx, (char*)lpFileNames[i] ), f );
+			fputs( _subst( ctx, lpFileNames[i] ), f );
 			fputs( "\n", f );
 		}
 		
@@ -357,12 +250,7 @@ BOOL _sccupdate(THECONTEXT*ctx,BOOL force=false){
 			_msg(ctx,"Please resolve all conflicts manually to continue work.");
 		}
 		
-		PASCALSTR ps;
-		char buf[5000]; //TODO: dangerous code
-		strcpy(buf,ctx->lpProjName);
-		ps.ptr=buf;
-		ps.len=strlen(buf);
-		BuildCache(ctx,&ps);
+		ScanWC(ctx);
 	}
 	ctx->dwLastUpdateTime=GetTickCount();
 	return true;
@@ -540,51 +428,7 @@ BOOL CALLBACK DialogProcComment(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam){
 	return 0;
 }
 
-char * _cachefile(char*prjpath){
-	char*c=prjpath;
-	int i,k,_svnlen;
-	//search for the last slash
-	for(i=0;prjpath[i];i++)
-		if(prjpath[i]=='\\' || prjpath[i]=='/')
-			c=prjpath+i;
-	//		
-	_svnlen=strlen(_svn);
-	k=_svnlen+7;  //length of \.svn\cache
-	//move filename to the right
-	for(i=strlen(c);i>=0;i--)c[i+k]=c[i];
-	
-	strncpy(c,"\\",1);
-	strncpy(c+1,_svn,_svnlen);
-	strncpy(c+1+_svnlen,"\\cache ",6);
-	strcat(c,".cch");
-	return prjpath;
-}
 
-
-//gets file checkout and version info
-//ver must be PBSCC_REVLEN+2+1
-//user must be SCC_USER_LEN+2+1
-//returns true if info found and ver+user are filled;
-bool _getfileinfo(THECONTEXT*ctx,char*file,char ver[PBSCC_REVLEN+2+1],char user[SCC_USER_LEN+2+1]){
-	ver[0]=0;
-	user[0]=0;
-	_subst(ctx,file);
-	if(!access(filesubst,0)){
-		FILE*fcch=fopen( _cachefile( filesubst ), "rt" );
-		if(fcch){
-			fgets(ver, PBSCC_REVLEN+2+1,fcch);
-			fgets(user,SCC_USER_LEN+2+1,fcch);
-			fclose(fcch);
-			rtrim(ver);
-			rtrim(user);
-		}else return false;
-	}else{
-		//delete cache file if exists
-		DeleteFile( _cachefile( filesubst ) );
-		return false;
-	}
-	return true;
-}
 
 BOOL _copyfile(THECONTEXT *ctx,const char*src,char*dst){
 	log("\tcopy \"%s\" \"%s\".\n",src,dst);
@@ -705,11 +549,6 @@ SCCEXTERNC SCCRTN EXTFUN SccInitialize(LPVOID * ppContext, HWND hWnd, LPCSTR lpC
 		}
 		
 		buflen=sizeof(buf);
-		if(RegQueryValueEx(rkey,"checkout.lock",NULL,&type,(LPBYTE)buf,&buflen)==ERROR_SUCCESS){
-			ctx->doLock=(atol(buf)!=0);
-		}
-		
-		buflen=sizeof(buf);
 		if(RegQueryValueEx(rkey,"svn.work",NULL,&type,(LPBYTE)buf,&buflen)==ERROR_SUCCESS){
 			strncpy(ctx->svnwd,buf,SCC_USER_LEN);
 			ctx->svnwd[SCC_USER_LEN-1]=0;
@@ -732,7 +571,6 @@ SCCEXTERNC SCCRTN EXTFUN SccInitialize(LPVOID * ppContext, HWND hWnd, LPCSTR lpC
 	GetTempFileName(ctx->lpMsgTmp    ,"pbscc",0,ctx->lpMsgTmp     );
 	
 	log("\t cache.ttl.milli: %i\n",ctx->cacheTtlMs);
-	log("\t checkout.lock  : %i\n",ctx->doLock);
 	log("\t svn work dir   : %s\n",ctx->svnwd);
 	log("\t out pipe       : %s\n",ctx->lpOutTmp);
 	log("\t err pipe       : %s\n",ctx->lpErrTmp);
@@ -791,15 +629,15 @@ SCCEXTERNC SCCRTN EXTFUN SccGetProjPath(LPVOID pContext, HWND hWnd, LPSTR lpUser
 	if(id){
 		SHGetPathFromIDList(id, lpProjName);
 		if(SHGetMalloc(&lpMalloc)==NOERROR)lpMalloc->Free(id);
-		if(!_execscc(ctx,"svn info --non-interactive --trust-server-cert \"%s\"",lpProjName)){
+		if(!_execscc(ctx,"svn info -r BASE --non-interactive --trust-server-cert \"%s\"",lpProjName)){
 			char buf[2048];
-			_snprintf(buf,sizeof(buf)-1,"The selected folder is not under source control.\n\n"  
+			_snprintf(buf,sizeof(buf)-1,"The selected folder is not under source control or SVN repository is not available.\n\n"  
 				"The command line\n"
-				"\tsvn.exe info --non-interactive \"%s\"\n"
-				"\treturns no rows.\n\n"
+				"\tsvn.exe info -r BASE --non-interactive --trust-server-cert \"%s\"\n"
+				"\tfailed.\n\n"
 				"Check that svn.exe installed on your computer.\n"
 				"The directory where svn.exe is located must be in the PATH environment variable.\n"
-				"Start your command shell and check that the command specified above returns one row like: \"Last Changed Rev: 559\".\n"
+				"Start your command shell and check that the command specified above returns no errors.\n"
 				,lpProjName);
 			strcpy(buf+sizeof(buf)-6,"...");
 			MessageBox(hWnd,buf, gpSccName, MB_OK|MB_ICONERROR);
@@ -820,27 +658,35 @@ SCCEXTERNC SCCRTN EXTFUN SccGetProjPath(LPVOID pContext, HWND hWnd, LPSTR lpUser
 SCCEXTERNC SCCRTN EXTFUN SccOpenProject(LPVOID pContext,HWND hWnd, LPSTR lpUser,LPSTR lpProjName,LPCSTR lpLocalProjPath,LPSTR lpAuxProjPath,LPCSTR lpComment,LPTEXTOUTPROC lpTextOutProc,LONG dwFlags){
 	log("SccOpenProject:\n");
 	THECONTEXT *ctx=(THECONTEXT *)pContext;
+	mstring buf=mstring();
 	strcpy(ctx->lpProjName,lpProjName);
 	strcpy(ctx->lpProjPath,lpLocalProjPath);
 	strcpy(ctx->lpUser,lpUser);
 	ctx->cbProjName=strlen(ctx->lpProjName);
 	ctx->cbProjPath=strlen(ctx->lpProjPath);
 	ctx->lpOutProc=lpTextOutProc;
-	mstring ver=mstring();
-	ver.sprintf("version %s built on %s",PROJECT_VER,PROJECT_DATE);
-	_msg(ctx,ver.c_str());
+	
+	ctx->lockStrategy=GetPrivateProfileInt("config", "lock.strategy", 
+			/** DEF: 
+			 * get local locks, 
+			 * get properties for back compatibility,
+			 * don't get server locks because it's long,
+			 * don't put anymore properties.
+			 */
+			LOCKSTRATEGY_LOCK_PUT|LOCKSTRATEGY_PROP_GET, 
+			buf.set(ctx->lpProjName)->addPath("scc.ini")->c_str() );
+	
+	_msg(ctx,buf.sprintf("version %s built on %s",PROJECT_VER,PROJECT_DATE)->c_str());
+	_msg(ctx,ctx->svnwd);
 	
 	{
-		HKEY rkey;
-		DWORD type=REG_SZ;
-		DWORD buflen=sizeof(_svn)-1;//11-1=10
-		if( RegOpenKey(PBSCC_REGKEY,PBSCC_REGPATH,&rkey)==ERROR_SUCCESS){
-			if(RegQueryValueEx(rkey,"svn.work",NULL,&type,(LPBYTE)_svn,&buflen)==ERROR_SUCCESS){
-				_msg(ctx,_svn);  //just debug
-			}
-			RegCloseKey(rkey);
-		}
+		buf.set("lock.strategy : get local lock"); //always present
+		if(ctx->lockStrategy&LOCKSTRATEGY_LOCK_GET)buf.append(", get server lock");
+		if(ctx->lockStrategy&LOCKSTRATEGY_LOCK_PUT)buf.append(", set lock");
+		if(ctx->lockStrategy&LOCKSTRATEGY_PROP_GET)buf.append(", get prop");
+		if(ctx->lockStrategy&LOCKSTRATEGY_PROP_GET)buf.append(", set prop");
 	}
+	
 	
 	if(!_sccupdate(ctx,true))return SCC_E_INITIALIZEFAILED;
 	if(!PBGetVersion(ctx->PBVersion))ctx->PBVersion[0]=0;//get pb version
@@ -889,19 +735,16 @@ SCCRTN _SccQueryInfo(LPVOID pContext, LONG nFiles, LPCSTR* lpFileNames,LPLONG lp
 
 	for(int i=0;i<nFiles;i++){
 		lpStatus[i]=SCC_STATUS_NOTCONTROLLED;
-
-		char ver[PBSCC_REVLEN+2+1] ; //+2 for CRLF +1 for EOL
-		char user[SCC_USER_LEN+2+1];
-		
-		if( _getfileinfo(ctx,(char*)lpFileNames[i], ver, user) ){
+		SVNINFOITEM * svni;
+		if( (svni = ctx->svni->get(ctx->lpProjPath,lpFileNames[i]))!=NULL ){
 			lpStatus[i]=SCC_STATUS_CONTROLLED;
-			if(user[0]){
-				if(!stricmp(user,ctx->lpUser))lpStatus[i]=SCC_STATUS_OUTBYUSER|SCC_STATUS_CONTROLLED;
+			if(svni->owner[0]){
+				if(!stricmp(svni->owner,ctx->lpUser))lpStatus[i]=SCC_STATUS_OUTBYUSER|SCC_STATUS_CONTROLLED;
 				else lpStatus[i]=SCC_STATUS_OUTOTHER|SCC_STATUS_CONTROLLED;
 			}
 			if(cbFunc){
 				cbp.object=(char*)lpFileNames[i];
-				cbp.version=ver;
+				cbp.version=svni->rev;
 				cbFunc(cbParm,&cbp);
 			}
 		}else{
@@ -911,7 +754,7 @@ SCCRTN _SccQueryInfo(LPVOID pContext, LONG nFiles, LPCSTR* lpFileNames,LPLONG lp
 				cbFunc(cbParm,&cbp);
 			}
 		}
-		log("\tstat=%04X ver=\"%s\" user=\"%s\" \"%s\"\n",lpStatus[i],ver,user,lpFileNames[i]);
+		//log("\tstat=%04X ver=\"%s\" user=\"%s\" \"%s\"\n",lpStatus[i],ver,user,lpFileNames[i]);
 	}
 	log("_SccQueryInfo: ms=%i\n",GetTickCount()-t);
 	return SCC_OK;
@@ -932,24 +775,30 @@ SCCEXTERNC SCCRTN EXTFUN SccCheckout(LPVOID pContext, HWND hWnd, LONG nFiles, LP
 	int i;
 	log("SccCheckout:\n");
 	if(!_sccupdate(ctx,true))return SCC_E_ACCESSFAILURE;
-	//check if all files are not locked
+	//do preliminary check
 	for(i=0;i<nFiles;i++){
-		char ver[PBSCC_REVLEN+2+1] ; //+2 for CRLF +1 for EOL
-		char user[SCC_USER_LEN+2+1];
-		
-		if( _getfileinfo(ctx,(char*)lpFileNames[i], ver, user) ){
-			if(user[0])return SCC_E_ALREADYCHECKEDOUT;
+		SVNINFOITEM * svni;
+		if( (svni = ctx->svni->get(ctx->lpProjPath,lpFileNames[i]))!=NULL ){
+			if(svni->owner[0])return SCC_E_ALREADYCHECKEDOUT;
 		}else return SCC_E_FILENOTCONTROLLED;
 	}
 	//do svn operations
 	if (!_files2list(ctx, nFiles, lpFileNames ))return SCC_E_ACCESSFAILURE;
-	if(!_execscc(ctx,"svn propset --non-interactive --trust-server-cert lockby \"%s\" --targets \"%s\"",ctx->lpUser,ctx->lpTargetsTmp)  )return SCC_E_NONSPECIFICERROR;
-	if(!_scccommit(ctx,SCC_COMMAND_CHECKOUT )){
-		_execscc(ctx,"svn revert --non-interactive --trust-server-cert --targets \"%s\"",ctx->lpTargetsTmp);
-		return SCC_E_ACCESSFAILURE;
-	}else if(ctx->doLock){
-		_execscc(ctx,"svn lock --non-interactive --trust-server-cert --targets \"%s\" -m CheckOut",ctx->lpTargetsTmp);
+	
+	if( ctx->lockStrategy&LOCKSTRATEGY_PROP_PUT ) {
+		if(!_execscc(ctx,"svn propset --non-interactive --trust-server-cert lockby \"%s\" --targets \"%s\"",ctx->lpUser,ctx->lpTargetsTmp)  )return SCC_E_NONSPECIFICERROR;
+		if(!_scccommit(ctx,SCC_COMMAND_CHECKOUT )){
+			_execscc(ctx,"svn revert --non-interactive --trust-server-cert --targets \"%s\"",ctx->lpTargetsTmp);
+			return SCC_E_ACCESSFAILURE;
+		}
 	}
+	
+	if( ctx->lockStrategy&LOCKSTRATEGY_LOCK_PUT ) {
+		if(!_execscc(ctx,"svn lock --non-interactive --trust-server-cert --targets \"%s\" -m CheckOut",ctx->lpTargetsTmp)){
+			return SCC_E_ACCESSFAILURE;
+		}
+	}
+	
 	//finish operations
 	for( i=0;i<nFiles;i++){
 		_copyfile(ctx,_subst(ctx,(char*)lpFileNames[i]),(char*)lpFileNames[i]);
@@ -961,23 +810,33 @@ SCCEXTERNC SCCRTN EXTFUN SccCheckout(LPVOID pContext, HWND hWnd, LONG nFiles, LP
 }
 
 SCCEXTERNC SCCRTN EXTFUN SccUncheckout(LPVOID pContext, HWND hWnd, LONG nFiles, LPCSTR* lpFileNames, LONG dwFlags,LPCMDOPTS pvOptions){
-	char ver[PBSCC_REVLEN+2+1] ; //+2 for CRLF +1 for EOL
-	char user[SCC_USER_LEN+2+1];
 	int i;
 	THECONTEXT *ctx=(THECONTEXT *)pContext;
 	log("SccUncheckout:\n");
 	if(!_sccupdate(ctx,true))return SCC_E_ACCESSFAILURE;
 	if (!_files2list(ctx, nFiles, lpFileNames ))return SCC_E_ACCESSFAILURE;
+	//do preliminary check
 	for(i=0;i<nFiles;i++){
-		if( _getfileinfo(ctx,(char*)lpFileNames[i], ver, user) ){
-			if( strcmp(user,ctx->lpUser) ) return SCC_E_NOTCHECKEDOUT;
+		SVNINFOITEM * svni;
+		if( (svni = ctx->svni->get(ctx->lpProjPath,lpFileNames[i]))!=NULL ){
+			if( stricmp(svni->owner,ctx->lpUser) ) return SCC_E_NOTCHECKEDOUT;
 		}else return SCC_E_FILENOTCONTROLLED;
-		if(!_execscc(ctx,"svn propdel --non-interactive --trust-server-cert lockby \"%s\"",_subst(ctx,(char*)lpFileNames[i]))  )return SCC_E_NONSPECIFICERROR;
 	}
-	if(!_scccommit(ctx,SCC_COMMAND_UNCHECKOUT )){
-		_execscc(ctx,"svn revert --non-interactive --trust-server-cert --targets \"%s\"",ctx->lpTargetsTmp);
-		return SCC_E_ACCESSFAILURE;
+	
+	if( ctx->lockStrategy&LOCKSTRATEGY_LOCK_PUT ) {
+		if(!_execscc(ctx,"svn unlock --non-interactive --trust-server-cert --targets \"%s\" -m UnCheckOut",ctx->lpTargetsTmp)){
+			return SCC_E_ACCESSFAILURE;
+		}
 	}
+	
+	if( ctx->lockStrategy&LOCKSTRATEGY_PROP_GET ) {  //If we get props, we must remove them
+		if(!_execscc(ctx,"svn propdel --non-interactive --trust-server-cert lockby \"%s\" --targets \"%s\"",ctx->lpUser,ctx->lpTargetsTmp)  )return SCC_E_NONSPECIFICERROR;
+		if(!_scccommit(ctx,SCC_COMMAND_UNCHECKOUT )){
+			_execscc(ctx,"svn revert --non-interactive --trust-server-cert --targets \"%s\"",ctx->lpTargetsTmp);
+			return SCC_E_ACCESSFAILURE;
+		}
+	}
+	
 	for(i=0;i<nFiles;i++){
 		_copyfile(ctx,_subst(ctx,(char*)lpFileNames[i]),(char*)lpFileNames[i]);
 		//cross the link in the todo list
@@ -989,8 +848,6 @@ SCCEXTERNC SCCRTN EXTFUN SccUncheckout(LPVOID pContext, HWND hWnd, LONG nFiles, 
 
 SCCEXTERNC SCCRTN EXTFUN SccCheckin(LPVOID pContext, HWND hWnd, LONG nFiles, LPCSTR* lpFileNames, LPCSTR lpComment, LONG dwFlags,LPCMDOPTS pvOptions){
 	THECONTEXT *ctx=(THECONTEXT *)pContext;
-	char ver[PBSCC_REVLEN+2+1] ; //+2 for CRLF +1 for EOL
-	char user[SCC_USER_LEN+2+1];
 	int i;
 	log("SccCheckin: \n");
 	
@@ -1000,12 +857,17 @@ SCCEXTERNC SCCRTN EXTFUN SccCheckin(LPVOID pContext, HWND hWnd, LONG nFiles, LPC
 	if (!_files2list(ctx, nFiles, lpFileNames ))return SCC_E_ACCESSFAILURE;
 	
 	for(i=0;i<nFiles;i++){
-		if( _getfileinfo(ctx,(char*)lpFileNames[i], ver, user) ){
-			if( strcmp(user,ctx->lpUser) ) return SCC_E_NOTCHECKEDOUT;
+		SVNINFOITEM * svni;
+		if( (svni = ctx->svni->get(ctx->lpProjPath,lpFileNames[i]))!=NULL ){
+			if( stricmp(svni->owner,ctx->lpUser) ) return SCC_E_NOTCHECKEDOUT;
 		}else return SCC_E_FILENOTCONTROLLED;
 		if( !_copyfile(ctx,lpFileNames[i],_subst(ctx, (char*)lpFileNames[i])) )goto error;
-		if(!_execscc(ctx,"svn propdel --non-interactive --trust-server-cert lockby \"%s\"",_subst(ctx,(char*)lpFileNames[i]))  )return SCC_E_NONSPECIFICERROR;
 	}
+	
+	if( ctx->lockStrategy&LOCKSTRATEGY_PROP_GET ) { //we should remove properties only if we get them
+		if(!_execscc(ctx,"svn propdel --non-interactive --trust-server-cert lockby \"%s\" --targets \"%s\"",ctx->lpUser,ctx->lpTargetsTmp)  )return SCC_E_NONSPECIFICERROR;
+	}
+	//locks automatically removed on commit.
 	if(!_scccommit(ctx,SCC_COMMAND_CHECKIN ))goto error;
 	
 	for(i=0;i<nFiles;i++){
@@ -1018,7 +880,6 @@ SCCEXTERNC SCCRTN EXTFUN SccCheckin(LPVOID pContext, HWND hWnd, LONG nFiles, LPC
 	error:
 	_execscc(ctx,"svn revert --non-interactive --trust-server-cert --targets \"%s\"",ctx->lpTargetsTmp);
 	return SCC_E_ACCESSFAILURE;
-	
 }
 
 SCCEXTERNC SCCRTN EXTFUN SccAdd(LPVOID pContext, HWND hWnd, LONG nFiles, LPCSTR* lpFileNames, LPCSTR lpComment, LONG * pdwFlags,LPCMDOPTS pvOptions){
@@ -1075,25 +936,24 @@ SCCEXTERNC SCCRTN EXTFUN SccDiff(LPVOID pContext, HWND hWnd, LPCSTR lpFileName, 
 	log("SccDiff: %s, %X :\n",lpFileName,dwFlags);
 	THECONTEXT *ctx=(THECONTEXT *)pContext;
 	if(!_sccupdate(ctx,false))return SCC_E_ACCESSFAILURE;
-	if( access( _subst(ctx, (char*)lpFileName), 0 /*R_OK*/ ) )return SCC_E_FILENOTCONTROLLED;
+	
+	if( access( _subst(ctx,lpFileName), 0 /*R_OK*/ ) )return SCC_E_FILENOTCONTROLLED;
 	
 	if(dwFlags&SCC_DIFF_QUICK_DIFF){
 		//do quick diff
-		if( filecmp( (char*)lpFileName, _subst(ctx, (char*)lpFileName))  ){
+		if( filecmp( lpFileName, _subst(ctx,lpFileName) )  ){
 			return SCC_OK;
 		}
 		return SCC_I_FILEDIFFERS;
 	}else{
 		mstring buf;
-		char ver[PBSCC_REVLEN+2+1] ; //+2 for CRLF +1 for EOL
-		char user[SCC_USER_LEN+2+1];
-		
-		if( _getfileinfo(ctx,(char*)lpFileName, ver, user) ){
-			if(!stricmp(user,ctx->lpUser)){
-				_copyfile(ctx,lpFileName,_subst(ctx, (char*)lpFileName));
-				buf.sprintf("TortoiseProc.exe /command:diff /path:\"%s\"", filesubst);
+		SVNINFOITEM * svni;
+		if( ( svni = ctx->svni->get(ctx->lpProjPath,lpFileName))!=NULL ) {
+			if(!stricmp(svni->owner,ctx->lpUser)){
+				_copyfile(ctx,lpFileName, _subst(ctx,lpFileName) );
+				buf.sprintf("TortoiseProc.exe /command:diff /path:\"%s\"", _subst(ctx,lpFileName) );
 				WinExec(buf.c_str(), SW_SHOW);
-				_execscc(ctx,"svn revert --non-interactive --trust-server-cert \"%s\"",filesubst);
+				_execscc(ctx,"svn revert --non-interactive --trust-server-cert \"%s\"", _subst(ctx,lpFileName) );
 				return SCC_OK;
 			}
 		}
