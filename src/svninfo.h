@@ -31,10 +31,10 @@
 
 
 typedef struct {
-	int        hash;      //simple hash
-	char       *path;     //relative path to file
-	char       *rev;       //revision 
-	char       *owner;    //object owner (locker)
+	int        hash;      // simple hash
+	char       *path;     // relative path to file
+	char       *rev;      // revision 
+	char       *owner;    // object owner (locker)
 }SVNINFOITEM;
 
 
