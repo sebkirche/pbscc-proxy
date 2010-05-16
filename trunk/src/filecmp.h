@@ -15,4 +15,4 @@
  *
  */
 
-bool filecmp(char*name1,char*name2);
+bool filecmp(const char*name1,const char*name2);

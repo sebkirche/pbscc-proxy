@@ -101,12 +101,15 @@ typedef struct {
 #define LOCKSTRATEGY_PROP_GET  4
 #define LOCKSTRATEGY_PROP_PUT  8
 
-// 0 1 2 3 4 5 6 7 8 9
+// 0 1 2 3  bits
+// 1 2 4 8  values
 // | | | |
 // | | | +- put properties
 // | | +--- get properties
 // | +----- put locks
-// +------- get locks
+// +------- get server locks (long operation)
+//
+// local locks always will be taken
 
 
 //TODO: DEPRECATED

@@ -27,7 +27,7 @@ typedef struct {
 	char url[ES_MAX_LEN+1];            // (usually valid only for owner)
 	char repository[ES_MAX_LEN+1];     // (usually valid only for owner)
 	char schedule[ES_SIMPLE_LEN+1];    // (delete,add,replace)
-	long revision;                     // (usually valid for files)
+	char revision[ES_SIMPLE_LEN+1];    // (usually valid for files)
 	char lockowner[ES_SIMPLE_LEN+1];   // (delete,add,replace)
 	char * wcpath;                     // path to work copy. you should not modify this.
 }SVNENTRY;

@@ -72,7 +72,7 @@ class mstring {
 		}
 
 		//! Constructor
-		mstring(TCHAR*c){
+		mstring(const TCHAR*c){
 			init();
 			append(c);
 		}
@@ -99,7 +99,7 @@ class mstring {
 		}
 		
 		//flag could be NORM_IGNORECASE
-		bool startsWith(TCHAR *c, int flag=0){
+		bool startsWith(const TCHAR *c, int flag=0){
 			int ret;
 			if(flag & NORM_IGNORECASE)
 				ret=_tcsnicmp(ptr, c, _tcslen(c));
@@ -115,7 +115,7 @@ class mstring {
 			return ptr[i];
 		}
 
-		mstring * set(TCHAR * c){
+		mstring * set(const TCHAR * c){
 			if(c){
 				long i=_tcslen(c);
 				realloc(i+1);
@@ -462,11 +462,12 @@ class mstring {
 		}
 		
 		
-		void sprintf(TCHAR* format, ...){
+		mstring* sprintf(TCHAR* format, ...){
 			va_list argList;
 			va_start(argList, format);
 			vsprintf(format, argList);
 			va_end(argList);
+			return this;
 		}
 
 		/* 
