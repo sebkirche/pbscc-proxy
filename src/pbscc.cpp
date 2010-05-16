@@ -825,7 +825,7 @@ SCCEXTERNC SCCRTN EXTFUN SccUncheckout(LPVOID pContext, HWND hWnd, LONG nFiles, 
 	}
 	
 	if( ctx->lockStrategy&LOCKSTRATEGY_LOCK_PUT ) {
-		if(!_execscc(ctx,"svn unlock --non-interactive --trust-server-cert --targets \"%s\" -m UnCheckOut",ctx->lpTargetsTmp)){
+		if(!_execscc(ctx,"svn unlock --non-interactive --trust-server-cert --targets \"%s\" ",ctx->lpTargetsTmp)){
 			return SCC_E_ACCESSFAILURE;
 		}
 	}
