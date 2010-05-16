@@ -19,6 +19,6 @@
 
 #define PROJECT_REV  "$WCREV$"
 #define PROJECT_DATE "$WCNOW=%Y-%m-%d$"
-#define PROJECT_VER  "1.00.$WCREV$"
+#define PROJECT_VER  "2.00.$WCREV$"
 
 
