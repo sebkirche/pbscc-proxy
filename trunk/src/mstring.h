@@ -169,6 +169,13 @@ class mstring {
 			return this;
 		}
 		
+		mstring* getIniString(const TCHAR * section,const TCHAR * key,const TCHAR * def,const TCHAR * filename ){
+			GetPrivateProfileString(section, key, def, ptr, allocated, filename );
+			length=_tcslen(ptr);
+			return this;
+		}
+		
+		
 		long len(){
 			return length;
 		}

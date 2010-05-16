@@ -96,25 +96,12 @@ typedef struct {
 	CHAR          svnwd[SCC_USER_LEN];  //svn work directory. by default ".svn"
 }THECONTEXT;
 
-#define LOCKSTRATEGY_LOCK_GET  1
-#define LOCKSTRATEGY_LOCK_PUT  2
-#define LOCKSTRATEGY_PROP_GET  4
-#define LOCKSTRATEGY_PROP_PUT  8
+#define LOCKSTRATEGY_LOCK  1
+#define LOCKSTRATEGY_PROP  2
 
-// 0 1 2 3  bits
-// 1 2 4 8  values
-// | | | |
-// | | | +- put properties
-// | | +--- get properties
-// | +----- put locks
-// +------- get server locks (long operation)
-//
-// local locks always will be taken
 
 
 #define DELAYFORNEWCOMMENT 2999
-//#define DELAYFORUPDATE 180000
-//#define DEFDDBITEM "(Anomalie ou evolution sans DDB)"
 #define PBSCC_REGPATH "SOFTWARE\\FM2i\\PBSCC Proxy"
 #define PBSCC_REGKEY HKEY_LOCAL_MACHINE
 

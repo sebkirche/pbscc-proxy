@@ -149,10 +149,10 @@ bool _entries_scanwc_callback(SVNENTRY*e,void*udata) {
 	}else if( !strcmp(e->kind,"file") ){
 		//by default local locks are filled from entries
 		//only if it's not filled we try to get it in another way
-		if( ctx->lockStrategy & LOCKSTRATEGY_LOCK_GET && !e->lockowner[0] ){
+		if( ctx->lockStrategy & LOCKSTRATEGY_LOCK ){
 			//TODO: get server locks not implemented yet
 		}
-		if( ctx->lockStrategy & LOCKSTRATEGY_PROP_GET && !e->lockowner[0]){
+		if( ctx->lockStrategy & LOCKSTRATEGY_PROP ){
 			//let's get lockby property
 			static mstring propPath=mstring();
 			//build properties file path
@@ -666,28 +666,20 @@ SCCEXTERNC SCCRTN EXTFUN SccOpenProject(LPVOID pContext,HWND hWnd, LPSTR lpUser,
 	ctx->cbProjPath=strlen(ctx->lpProjPath);
 	ctx->lpOutProc=lpTextOutProc;
 	
-	ctx->lockStrategy=GetPrivateProfileInt("config", "lock.strategy", 
-			/** DEF: 
-			 * get local locks, 
-			 * get properties for back compatibility,
-			 * don't get server locks because it's long,
-			 * don't put anymore properties.
-			 */
-			LOCKSTRATEGY_LOCK_PUT|LOCKSTRATEGY_PROP_GET, 
-			buf.set(ctx->lpProjName)->addPath("scc.ini")->c_str() );
-	
 	_msg(ctx,buf.set(NULL)->sprintf("version %s built on %s",PROJECT_VER,PROJECT_DATE)->c_str());
 	_msg(ctx,buf.set(NULL)->sprintf("svn work dir: %s",ctx->svnwd)->c_str() );
 	
 	{
-		buf.set("lock.strategy : get local lock"); //always present
-		if(ctx->lockStrategy&LOCKSTRATEGY_LOCK_GET)buf.append(", get server lock");
-		if(ctx->lockStrategy&LOCKSTRATEGY_LOCK_PUT)buf.append(", set lock");
-		if(ctx->lockStrategy&LOCKSTRATEGY_PROP_GET)buf.append(", get prop");
-		if(ctx->lockStrategy&LOCKSTRATEGY_PROP_PUT)buf.append(", set prop");
+		//get lock strategy
+		buf.getIniString("config","lock.strategy","", buf.set(ctx->lpProjName)->addPath("scc.ini")->c_str() );
+		if(!strcmp(buf.c_str(),"prop"))ctx->lockStrategy=LOCKSTRATEGY_PROP;
+		else ctx->lockStrategy=LOCKSTRATEGY_LOCK;
+		
+		buf.set("lock strategy : ");
+		if(ctx->lockStrategy&LOCKSTRATEGY_LOCK)buf.append("lock");
+		if(ctx->lockStrategy&LOCKSTRATEGY_PROP)buf.append("prop");
 		_msg(ctx,buf.c_str() );
 	}
-	
 	
 	if(!_sccupdate(ctx,true))return SCC_E_INITIALIZEFAILED;
 	if(!PBGetVersion(ctx->PBVersion))ctx->PBVersion[0]=0;//get pb version
@@ -786,15 +778,14 @@ SCCEXTERNC SCCRTN EXTFUN SccCheckout(LPVOID pContext, HWND hWnd, LONG nFiles, LP
 	//do svn operations
 	if (!_files2list(ctx, nFiles, lpFileNames ))return SCC_E_ACCESSFAILURE;
 	
-	if( ctx->lockStrategy&LOCKSTRATEGY_PROP_PUT ) {
+	if( ctx->lockStrategy&LOCKSTRATEGY_PROP ) {
 		if(!_execscc(ctx,"svn propset --non-interactive --trust-server-cert lockby \"%s\" --targets \"%s\"",ctx->lpUser,ctx->lpTargetsTmp)  )return SCC_E_NONSPECIFICERROR;
 		if(!_scccommit(ctx,SCC_COMMAND_CHECKOUT )){
 			_execscc(ctx,"svn revert --non-interactive --trust-server-cert --targets \"%s\"",ctx->lpTargetsTmp);
 			return SCC_E_ACCESSFAILURE;
 		}
 	}
-	
-	if( ctx->lockStrategy&LOCKSTRATEGY_LOCK_PUT ) {
+	if( ctx->lockStrategy&LOCKSTRATEGY_LOCK ) {
 		if(!_execscc(ctx,"svn lock --non-interactive --trust-server-cert --targets \"%s\" -m CheckOut",ctx->lpTargetsTmp)){
 			return SCC_E_ACCESSFAILURE;
 		}
@@ -824,18 +815,16 @@ SCCEXTERNC SCCRTN EXTFUN SccUncheckout(LPVOID pContext, HWND hWnd, LONG nFiles, 
 		}else return SCC_E_FILENOTCONTROLLED;
 	}
 	
-	if( ctx->lockStrategy&LOCKSTRATEGY_LOCK_PUT ) {
-		if(!_execscc(ctx,"svn unlock --non-interactive --trust-server-cert --targets \"%s\" ",ctx->lpTargetsTmp)){
-			return SCC_E_ACCESSFAILURE;
-		}
+	if( ctx->lockStrategy&LOCKSTRATEGY_LOCK ) {
+		if(!_execscc(ctx,"svn unlock --non-interactive --trust-server-cert --force --targets \"%s\" ",ctx->lpTargetsTmp))goto error;
 	}
 	
-	if( ctx->lockStrategy&LOCKSTRATEGY_PROP_GET ) {  //If we get props, we must remove them
-		if(!_execscc(ctx,"svn propdel --non-interactive --trust-server-cert lockby \"%s\" --targets \"%s\"",ctx->lpUser,ctx->lpTargetsTmp)  )return SCC_E_NONSPECIFICERROR;
-		if(!_scccommit(ctx,SCC_COMMAND_UNCHECKOUT )){
-			_execscc(ctx,"svn revert --non-interactive --trust-server-cert --targets \"%s\"",ctx->lpTargetsTmp);
-			return SCC_E_ACCESSFAILURE;
+	if( ctx->lockStrategy&LOCKSTRATEGY_PROP ) {
+		for(i=0;i<nFiles;i++){
+			if(!_execscc(ctx,"svn propdel --non-interactive --trust-server-cert lockby \"%s\"",_subst(ctx,lpFileNames[i]))  )
+				goto error;
 		}
+		if(!_scccommit(ctx,SCC_COMMAND_UNCHECKOUT ))goto error;
 	}
 	
 	for(i=0;i<nFiles;i++){
@@ -845,6 +834,9 @@ SCCEXTERNC SCCRTN EXTFUN SccUncheckout(LPVOID pContext, HWND hWnd, LONG nFiles, 
 	}
 	if(!_sccupdate(ctx,true))return SCC_E_ACCESSFAILURE;
 	return SCC_OK;
+	error:
+	_execscc(ctx,"svn revert --non-interactive --trust-server-cert --targets \"%s\"",ctx->lpTargetsTmp);
+	return SCC_E_ACCESSFAILURE;
 }
 
 SCCEXTERNC SCCRTN EXTFUN SccCheckin(LPVOID pContext, HWND hWnd, LONG nFiles, LPCSTR* lpFileNames, LPCSTR lpComment, LONG dwFlags,LPCMDOPTS pvOptions){
@@ -865,8 +857,11 @@ SCCEXTERNC SCCRTN EXTFUN SccCheckin(LPVOID pContext, HWND hWnd, LONG nFiles, LPC
 		if( !_copyfile(ctx,lpFileNames[i],_subst(ctx, (char*)lpFileNames[i])) )goto error;
 	}
 	
-	if( ctx->lockStrategy&LOCKSTRATEGY_PROP_GET ) { //we should remove properties only if we get them
-		if(!_execscc(ctx,"svn propdel --non-interactive --trust-server-cert lockby \"%s\" --targets \"%s\"",ctx->lpUser,ctx->lpTargetsTmp)  )return SCC_E_NONSPECIFICERROR;
+	if( ctx->lockStrategy&LOCKSTRATEGY_PROP ) {
+		for(i=0;i<nFiles;i++){
+			if(!_execscc(ctx,"svn propdel --non-interactive --trust-server-cert lockby \"%s\"",_subst(ctx,lpFileNames[i]))  )
+				goto error;
+		}
 	}
 	//locks automatically removed on commit.
 	if(!_scccommit(ctx,SCC_COMMAND_CHECKIN ))goto error;
