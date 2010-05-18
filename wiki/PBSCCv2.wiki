@@ -1,8 +1,21 @@
+#summary PBSCC-Proxy version 2
 #labels Featured
-#PBSCC-Proxy version 2
 
 = pbscc-proxy version 2 =
 
 New version of the pbscc-proxy is available.
 
-todo:
+The main change in this version is how PBSCC controls object locking.
+
+Now pbscc uses native *svn lock* ability for object locking.
+
+However you can create file _scc.ini_ in the root of your work-copy.
+
+*svn.ini sample*
+{{{
+[config]
+; lock strategy: 
+;   "lock"  using svn lock (default from version 2.x)
+;   "prop"  using svn properties (old behavior)
+lock.strategy=prop
+}}}
