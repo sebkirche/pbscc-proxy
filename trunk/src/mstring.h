@@ -464,6 +464,7 @@ class mstring {
 
 			realloc(length + nMaxLen +1 );
 			::_vstprintf(ptr+length, lpszFormat, argListSave);
+			length=_tcslen(ptr);
 
 			va_end(argListSave);
 		}
