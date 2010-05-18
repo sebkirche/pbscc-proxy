@@ -669,9 +669,54 @@ SCCEXTERNC SCCRTN EXTFUN SccOpenProject(LPVOID pContext,HWND hWnd, LPSTR lpUser,
 	_msg(ctx,buf.set(NULL)->sprintf("version %s built on %s",PROJECT_VER,PROJECT_DATE)->c_str());
 	_msg(ctx,buf.set(NULL)->sprintf("svn work dir: %s",ctx->svnwd)->c_str() );
 	
+	if(!_sccupdate(ctx,true))return SCC_E_INITIALIZEFAILED;
+	
 	{
+		//path to the scc.ini file
+		buf.set(ctx->lpProjName)->addPath("scc.ini");
+		//if file does not exist, suggest to create it
+		if( access( buf.c_str(), 0 /*R_OK*/) ) {
+			mstring msg=mstring("Attention!\n");
+			msg.sprintf("Your svn project \"%s\"\ndoes not have definition of the object locking strategy.\n",ctx->lpProjName);
+			msg.sprintf("This information will be stored here:\n \"%s\"\n\n",buf.c_str());
+			
+			msg.append("You should choose:\n");
+			msg.append("\tYes \tto use \"svn lock\"\n");
+			msg.append("\tNo  \tto use \"lockby\" property (old behavior)\n");
+			msg.append("\tCancel\tto answer this question later\n");
+			
+			int choise = MessageBox(hWnd, msg.c_str(), gpSccName, MB_YESNOCANCEL|MB_ICONINFORMATION );
+			
+			if(choise==IDYES || choise==IDNO){
+				msg.set   ("[config]\n")->
+					append("; lock strategy: \n")->
+					append(";   \"lock\"  using svn lock (default from version 2.x)\n")->
+					append(";   \"prop\"  using svn properties (old behavior)\n")->
+					append("lock.strategy=");
+				
+				if(choise==IDYES)msg.append("lock\n");
+				else msg.append("prop\n");
+				//create scc.ini file
+				FILE*f=fopen(buf.c_str(),"wt");
+				if(f){
+					fputs(msg.c_str(),f);
+					fflush(f);
+					fclose(f);
+					//add file into svn
+					if(_execscc(ctx,"svn add --non-interactive --trust-server-cert \"%s\"",buf.c_str())  ){
+						if(!_execscc(ctx,"svn commit --non-interactive --trust-server-cert -m \"project init\" \"%s\"",buf.c_str()))
+							return SCC_E_INITIALIZEFAILED;
+					}else{
+						_execscc(ctx,"svn revert --non-interactive --trust-server-cert \"%s\"",buf.c_str());
+						return SCC_E_INITIALIZEFAILED;
+					}
+				}
+			}
+		}
+		
+		
 		//get lock strategy
-		buf.getIniString("config","lock.strategy","", buf.set(ctx->lpProjName)->addPath("scc.ini")->c_str() );
+		buf.getIniString("config","lock.strategy","", buf.c_str() );
 		if(!strcmp(buf.c_str(),"prop"))ctx->lockStrategy=LOCKSTRATEGY_PROP;
 		else ctx->lockStrategy=LOCKSTRATEGY_LOCK;
 		
@@ -681,7 +726,6 @@ SCCEXTERNC SCCRTN EXTFUN SccOpenProject(LPVOID pContext,HWND hWnd, LPSTR lpUser,
 		_msg(ctx,buf.c_str() );
 	}
 	
-	if(!_sccupdate(ctx,true))return SCC_E_INITIALIZEFAILED;
 	if(!PBGetVersion(ctx->PBVersion))ctx->PBVersion[0]=0;//get pb version
 	
 	return SCC_OK;
