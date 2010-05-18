@@ -29,3 +29,11 @@ To switch between two lock strategies you have to remove all current locks (lock
 Current version 2.0.x will not display locks of other users. This will be implemented in the version 2.1.x. 
 
 The problem is that this information is not available in local work copy and must be requested from svn server and could take long time.
+
+For correct team work everybody must use the new version
+
+
+
+
+
+ 
