@@ -25,6 +25,4 @@
   * svn delete
   * svn commit
  * `SccHistory`
-  * TortoiseProc.exe /command:log
-
-
+  * tortoiseproc.exe /command:log
