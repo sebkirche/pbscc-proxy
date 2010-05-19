@@ -2,8 +2,16 @@
 
 == "svn lock" object locking strategy ==
 
-* SccQueryInfo
-** svn update
-* SccCheckout
-** svn lock
-* SccUncheckout
+ * `SccQueryInfo`
+  * svn update
+ * `SccCheckout`
+  * svn update
+  * svn lock
+ * `SccUncheckout`
+  * svn update
+  * svn unlock
+ * `SccCheckin`
+  * svn update
+  * svn commit
+ * `SccAdd`
+...
