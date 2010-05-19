@@ -1,17 +1,30 @@
 #summary Map of SVN commands for each SCC operation.
 
-== "svn lock" object locking strategy ==
+== commands for "svn lock" object locking strategy ==
 
  * `SccQueryInfo`
   * svn update
  * `SccCheckout`
   * svn update
   * svn lock
+  * copy files
  * `SccUncheckout`
   * svn update
   * svn unlock
  * `SccCheckin`
   * svn update
+  * copy files
   * svn commit
  * `SccAdd`
-...
+  * svn update
+  * copy files
+  * svn add
+  * svn commit
+ * `SccRemove`
+  * svn update
+  * svn delete
+  * svn commit
+ * `SccHistory`
+  * TortoiseProc.exe /command:log
+
+
