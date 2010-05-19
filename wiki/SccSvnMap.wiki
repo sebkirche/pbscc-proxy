@@ -1,0 +1,9 @@
+#summary Map of SVN commands for each SCC operation.
+
+== "svn lock" object locking strategy ==
+
+* SccQueryInfo
+** svn update
+* SccCheckout
+** svn lock
+* SccUncheckout
