@@ -8,3 +8,5 @@
   * Now the version consist of the following values: `major.minor.revision`
   * Fixed installation script when working with PATH environment variable
   * added `--trust-server-cert` to all svn commands to allow work with secured svn server (https protocol)
+
+ * *earlier releases* To read more about previous releases visit old homepage: http://dm.char.com.ua/pb/pbscc/pbscc.htm
