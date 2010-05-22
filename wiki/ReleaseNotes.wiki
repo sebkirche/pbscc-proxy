@@ -1,0 +1,10 @@
+#summary Release Notes / What's New
+#labels Featured
+
+ * *2.00.33* Beta version with new object locking behavior. 
+  * Read more on a dedicated page: [PBSCCv2]
+
+ * *1.00.12* The first open-source release. 
+  * Now the version consist of the following values: `major.minor.revision`
+  * Fixed installation script when working with PATH environment variable
+  * added `--trust-server-cert` to all svn commands to allow work with secured svn server (https protocol)
