@@ -11,7 +11,7 @@ Now pbscc uses native *svn lock* ability for object locking.
 
 However, you can use file _scc.ini_ in the root of your work-copy where you can specify the way how to manage current svn-project.
 
-*svn.ini sample*
+*scc.ini sample*
 {{{
 [config]
 ; lock strategy: 
@@ -20,7 +20,7 @@ However, you can use file _scc.ini_ in the root of your work-copy where you can 
 lock.strategy=prop
 }}}
 
-When you will connect to your project repository, pbscc will request you to create svn.ini file.
+When you will connect to your project repository, pbscc will request you to create scc.ini file.
 
 = note =
 
