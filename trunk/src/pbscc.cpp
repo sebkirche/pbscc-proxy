@@ -25,6 +25,7 @@
 #include "easystr.h"
 #include "entries.h"
 #include "filecmp.h"
+#include "filecpy.h"
 #include "conproc.h"
 #include "svninfo.h"
 #include "tmp\version.h"
@@ -434,7 +435,12 @@ BOOL _copyfile(THECONTEXT *ctx,const char*src,char*dst){
 	log("\tcopy \"%s\" \"%s\".\n",src,dst);
 	SetFileAttributes(src,FILE_ATTRIBUTE_NORMAL);
 	SetFileAttributes(dst,FILE_ATTRIBUTE_NORMAL);
-	BOOL b=CopyFile(src,dst,false);
+	BOOL b=false;
+	if(ctx->exportEncode==EENCODE_NONE){
+		b=CopyFile(src,dst,false);
+	}else{
+		b=CopyFileUTF8(src,dst);
+	}
 	if(!b){
 		char *buf=new char[strlen(src)+strlen(dst)+100];
 		sprintf(buf,"can't copy \"%s\" to \"%s\"",src,dst);
@@ -659,6 +665,7 @@ SCCEXTERNC SCCRTN EXTFUN SccOpenProject(LPVOID pContext,HWND hWnd, LPSTR lpUser,
 	log("SccOpenProject:\n");
 	THECONTEXT *ctx=(THECONTEXT *)pContext;
 	mstring buf=mstring();
+	mstring s=mstring();
 	strcpy(ctx->lpProjName,lpProjName);
 	strcpy(ctx->lpProjPath,lpLocalProjPath);
 	strcpy(ctx->lpUser,lpUser);
@@ -716,14 +723,24 @@ SCCEXTERNC SCCRTN EXTFUN SccOpenProject(LPVOID pContext,HWND hWnd, LPSTR lpUser,
 		
 		
 		//get lock strategy
-		buf.getIniString("config","lock.strategy","", buf.c_str() );
-		if(!strcmp(buf.c_str(),"prop"))ctx->lockStrategy=LOCKSTRATEGY_PROP;
+		s.getIniString("config","lock.strategy","", buf.c_str() );
+		if(!strcmp(s.c_str(),"prop"))ctx->lockStrategy=LOCKSTRATEGY_PROP;
 		else ctx->lockStrategy=LOCKSTRATEGY_LOCK;
 		
-		buf.set("lock strategy : ");
-		if(ctx->lockStrategy&LOCKSTRATEGY_LOCK)buf.append("lock");
-		if(ctx->lockStrategy&LOCKSTRATEGY_PROP)buf.append("prop");
-		_msg(ctx,buf.c_str() );
+		s.set("lock strategy : ");
+		if(ctx->lockStrategy&LOCKSTRATEGY_LOCK)s.append("lock");
+		if(ctx->lockStrategy&LOCKSTRATEGY_PROP)s.append("prop");
+		_msg(ctx,s.c_str() );
+		
+		//get recode flag
+		s.getIniString("config","export.encoding","", buf.c_str() );
+		if(!stricmp(s.c_str(),"utf-8"))ctx->exportEncode=EENCODE_UTF8;
+		else ctx->exportEncode=EENCODE_NONE;
+		
+		s.set("export encoding : ");
+		if(ctx->exportEncode==EENCODE_UTF8)s.append("utf-8");
+		if(ctx->exportEncode==EENCODE_NONE)s.append("none");
+		_msg(ctx,s.c_str() );
 	}
 	
 	if(!PBGetVersion(ctx->PBVersion))ctx->PBVersion[0]=0;//get pb version
