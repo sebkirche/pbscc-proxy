@@ -94,6 +94,7 @@ typedef struct {
 	HWND          parent;
 	svninfo       *svni;
 	CHAR          svnwd[SCC_USER_LEN];  //svn work directory. by default ".svn"
+	int           exportEncode;           //recode file when copy into svn workcopy
 }THECONTEXT;
 
 #define LOCKSTRATEGY_LOCK  1
@@ -104,6 +105,10 @@ typedef struct {
 #define DELAYFORNEWCOMMENT 2999
 #define PBSCC_REGPATH "SOFTWARE\\FM2i\\PBSCC Proxy"
 #define PBSCC_REGKEY HKEY_LOCAL_MACHINE
+
+
+#define EENCODE_NONE	0
+#define EENCODE_UTF8	1
 
 
 void log(const char* szFmt,...);
