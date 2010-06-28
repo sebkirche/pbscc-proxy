@@ -440,6 +440,8 @@ BOOL _copyfile(THECONTEXT *ctx,const char*src,char*dst){
 		b=CopyFile(src,dst,false);
 	}else{
 		b=CopyFileUTF8(src,dst);
+		//try usual copy
+		if(!b)b=CopyFile(src,dst,false);
 	}
 	if(!b){
 		char *buf=new char[strlen(src)+strlen(dst)+100];
@@ -665,7 +667,7 @@ SCCEXTERNC SCCRTN EXTFUN SccOpenProject(LPVOID pContext,HWND hWnd, LPSTR lpUser,
 	log("SccOpenProject:\n");
 	THECONTEXT *ctx=(THECONTEXT *)pContext;
 	mstring buf=mstring();
-	mstring s=mstring();
+	mstring s=mstring("");
 	strcpy(ctx->lpProjName,lpProjName);
 	strcpy(ctx->lpProjPath,lpLocalProjPath);
 	strcpy(ctx->lpUser,lpUser);
@@ -721,6 +723,7 @@ SCCEXTERNC SCCRTN EXTFUN SccOpenProject(LPVOID pContext,HWND hWnd, LPSTR lpUser,
 			}
 		}
 		
+		log("read scc.ini\n");
 		
 		//get lock strategy
 		s.getIniString("config","lock.strategy","", buf.c_str() );
@@ -731,6 +734,7 @@ SCCEXTERNC SCCRTN EXTFUN SccOpenProject(LPVOID pContext,HWND hWnd, LPSTR lpUser,
 		if(ctx->lockStrategy&LOCKSTRATEGY_LOCK)s.append("lock");
 		if(ctx->lockStrategy&LOCKSTRATEGY_PROP)s.append("prop");
 		_msg(ctx,s.c_str() );
+		log("\t%s\n",s.c_str());
 		
 		//get recode flag
 		s.getIniString("config","export.encoding","", buf.c_str() );
@@ -741,6 +745,7 @@ SCCEXTERNC SCCRTN EXTFUN SccOpenProject(LPVOID pContext,HWND hWnd, LPSTR lpUser,
 		if(ctx->exportEncode==EENCODE_UTF8)s.append("utf-8");
 		if(ctx->exportEncode==EENCODE_NONE)s.append("none");
 		_msg(ctx,s.c_str() );
+		log("\t%s\n",s.c_str());
 	}
 	
 	if(!PBGetVersion(ctx->PBVersion))ctx->PBVersion[0]=0;//get pb version
@@ -997,12 +1002,14 @@ SCCEXTERNC SCCRTN EXTFUN SccDiff(LPVOID pContext, HWND hWnd, LPCSTR lpFileName, 
 	if( access( _subst(ctx,lpFileName), 0 /*R_OK*/ ) )return SCC_E_FILENOTCONTROLLED;
 	
 	if(dwFlags&SCC_DIFF_QUICK_DIFF){
+		log("\tdo quick diff\n");
 		//do quick diff
 		if( filecmp( lpFileName, _subst(ctx,lpFileName) )  ){
 			return SCC_OK;
 		}
 		return SCC_I_FILEDIFFERS;
 	}else{
+		log("\tdo visual diff\n");
 		mstring buf;
 		SVNINFOITEM * svni;
 		if( ( svni = ctx->svni->get(ctx->lpProjPath,lpFileName))!=NULL ) {

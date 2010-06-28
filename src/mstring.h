@@ -169,6 +169,26 @@ class mstring {
 			return this;
 		}
 		
+		mstring* append(TCHAR c){
+			if(!c)return this;
+			realloc(length+2); //1 char + 1 EOS
+			ptr[length]=c;
+			length++;
+			ptr[length]=0;
+			return this;
+		}
+		
+		/** removes first char from the string. 
+		  * returns reference to itself.
+		  */
+		mstring* dequeue(){
+			if(length>0){
+				_tcscpy(ptr,ptr+1);
+				length--;
+			}
+			return this;
+		}
+		
 		mstring* getIniString(const TCHAR * section,const TCHAR * key,const TCHAR * def,const TCHAR * filename ){
 			GetPrivateProfileString(section, key, def, ptr, allocated, filename );
 			length=_tcslen(ptr);

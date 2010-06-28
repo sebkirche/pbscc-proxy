@@ -12,6 +12,7 @@
 #include "mstring.h"
 #include "entries.h"
 #include "svninfo.h"
+#include "filecpy.h"
 
 #define BUF_SIZE	512
 #define XML_FMT_INT_MOD "l"
@@ -40,6 +41,10 @@ long outproc (LPCSTR msg, DWORD len) {
 int main(int argc, char *argv[]) {
 	long t=0;
 	int i;
+	
+	printf("copy=%i\n",CopyFileUTF8("in.srw","out.srw") );
+	
+	if(1==1)return 0;
 	
 	LONG lpSccCaps,pnCheckoutCommentLen,pnCommentLen;
 	logFile=stdout;

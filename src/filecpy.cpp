@@ -20,9 +20,147 @@
 #include <stdlib.h>
 #include <tchar.h>
 
+
+#define HASTATE_START	0
+#define HASTATE_ASCII	1
+#define HASTATE_LEN		2
+#define HASTATE_HA		3
+#define HASTATE_END		4
+
+
+
+
+
+/**
+ * Copies HEXASCII file to UTF8 file
+ */
+
 BOOL CopyFileUTF8(const char*src,char*dst){
-	BOOL b=false;
-	return b;
+//	BOOL b=false;
+//	return b;
+	int ch,b4,i;
+	///buffer for reading and comparing data
+	char buf[50]; //only ascii chars are here
+	int buflen=0;
+	///shift for hex unicode chars
+	int b4shift[]={4,0,12,8};
+	
+	int state=0;
+	int halen; //number of hexascii chars
+	
+	FILE*fin=NULL;
+	FILE*fout=NULL;
+	
+	fin=fopen(src,"rb");
+	fout=fopen(dst,"wb");
+	
+	if(fin==NULL)goto err;
+	if(fout==NULL)goto err;
+	
+	//write out UTF-8 BOM
+	putc(0xEF,fout);
+	putc(0xBB,fout);
+	putc(0xBF,fout);
+	
+	while( (ch = getc( fin )) != EOF ) {
+		if(state==HASTATE_START){
+			//HEXASCII file must start with "HA" chars
+			if(ch!='H')goto err;
+			ch=getc( fin );
+			if(ch!='A')goto err;
+			state=HASTATE_ASCII;
+		}else if(state==HASTATE_ASCII){
+			//waiting for pure ascii chars and maybe for a $$HEX prefix
+			buf[buflen]=ch;
+			buflen++;
+			if(!strncmp( buf, "$$HEX",buflen )){
+				if(buflen==5){
+					state=HASTATE_LEN;
+					halen=0;
+					buflen=0;
+				}
+			}else{
+				//move everything from buf into out file
+				fwrite( buf, buflen /*elem size*/, 1 /*elem count*/, fout );
+				buflen=0;
+			}
+		}else if(state==HASTATE_LEN){
+			//here there should be a length of the HASCII sequence
+			if(ch>='0' && ch<='9'){
+				//halen is in decimal format
+				halen=halen*10+(ch-'0');
+			}else if(ch=='$'){
+				//there should be the next $ char
+				ch=getc( fin );
+				if(ch!='$')goto err;
+				state=HASTATE_HA;
+			}else{
+				goto err;
+			}
+		}else if(state==HASTATE_HA){
+			//here heximal representation of the unicode chars
+			int wch=0;
+			for(i=0;i<4;i++){
+				switch(ch){
+					case '0':b4=0;break;
+					case '1':b4=1;break;
+					case '2':b4=2;break;
+					case '3':b4=3;break;
+					case '4':b4=4;break;
+					case '5':b4=5;break;
+					case '6':b4=6;break;
+					case '7':b4=7;break;
+					case '8':b4=8;break;
+					case '9':b4=9;break;
+					case 'a':
+					case 'A':b4=10;break;
+					case 'b':
+					case 'B':b4=11;break;
+					case 'c':
+					case 'C':b4=12;break;
+					case 'd':
+					case 'D':b4=13;break;
+					case 'e':
+					case 'E':b4=14;break;
+					case 'f':
+					case 'F':b4=15;break;
+					default :goto err;
+				}
+				wch=wch | (b4<<b4shift[i]);
+				if(i!=3)ch=getc( fin );
+			}
+			buflen=WideCharToMultiByte(CP_UTF8,0,(WCHAR*)&wch,1,buf,sizeof(buf),NULL,NULL);
+			if(buflen>0){
+				//move utf8 chars from buf into out file
+				fwrite( buf, buflen /*elem size*/, 1 /*elem count*/, fout );
+				buflen=0;
+			}else {
+				goto err;
+			}
+			halen--;
+			
+			if(halen<=0){
+				//there should be $$ENDHEX$$ 
+				buflen=fread( buf,1,10,fin );
+				if(buflen!=10)goto err;
+				if(strncmp(buf,"$$ENDHEX$$",buflen))goto err;
+				buflen=0;
+				state=HASTATE_ASCII;
+			}
+		}
+	}
+	
+	fclose(fin);
+	fflush(fout);
+	fclose(fout);
+	return true;
+	
+	err:
+	if(fin)fclose(fin);
+	if(fout)fclose(fout);
+	
+	return false;
+	
 }
 
 TCHAR*DELIMHEXASCII	=_T("$$");
