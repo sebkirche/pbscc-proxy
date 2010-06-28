@@ -1,6 +1,9 @@
 #summary Release Notes / What's New
 #labels Featured
 
+ * *2.00.43* <font color="red">Beta</font> Convert HEXASCII to UTF-8 on commit. 
+  * Use *export.encoding=utf-8* in scc.ini of your project
+
  * *2.00.33* <font color="red">Beta</font> version with new object locking behavior. 
   * Read more on a dedicated page: [PBSCCv2]
 
