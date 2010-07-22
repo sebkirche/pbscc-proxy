@@ -215,20 +215,17 @@ BOOL _scccommit(THECONTEXT*ctx,SCCCOMMAND icmd){
 		case SCC_COMMAND_CHECKIN:{
 			_msg2file(ctx,"scc check in : ");
 			cmd="svn commit --non-interactive --trust-server-cert --targets \"%s\" --file \"%s\"";
-			ctx->dwLastCommitTime = GetTickCount();
 			break;
 		}
 		case SCC_COMMAND_ADD:{
 			_msg2file(ctx,"scc add : ");
 			cmd="svn commit --non-interactive --trust-server-cert --targets \"%s\" --file \"%s\"";
-			ctx->dwLastCommitTime = GetTickCount();
 			ctx->isLastAddRemove = true;
 			break;
 		}
 		case SCC_COMMAND_REMOVE:{
 			_msg2file(ctx,"scc remove : ");
 			cmd="svn commit --non-interactive --trust-server-cert --targets \"%s\" --file \"%s\"";
-			ctx->dwLastCommitTime = GetTickCount();
 			ctx->isLastAddRemove = true;
 			break;
 		}
@@ -237,6 +234,7 @@ BOOL _scccommit(THECONTEXT*ctx,SCCCOMMAND icmd){
 	if(!_execscc(ctx, cmd, ctx->lpTargetsTmp, ctx->lpMsgTmp)){
 		return false;
 	}
+	ctx->dwLastCommitTime = GetTickCount();
 	return true;
 }
 
@@ -466,16 +464,12 @@ BOOL needComment(THECONTEXT*ctx){
 			}
 		}else break;
 	}
-
-//BAD CHECK. Better to add operation into ctx.
-//and check if it's the first checkin operation after add/remove
-/*	if (ctx->isLastAddRemove) {
-		ctx->isLastAddRemove = FALSE;
-		return FALSE; 
+	if ((GetTickCount() - ctx->dwLastCommitTime) > DELAYFORNEWCOMMENT){
+		log("needComment: true.\n");
+		return true;
 	}
-*/
-	
-	return ((GetTickCount() - ctx->dwLastCommitTime) > DELAYFORNEWCOMMENT);
+	log("needComment: false.\n");
+	return false;
 }
 
 bool rememberTarget(THECONTEXT*ctx,LONG nFiles,LPCSTR* lpFileNames){
@@ -782,7 +776,7 @@ SCCEXTERNC SCCRTN EXTFUN SccGet(LPVOID pContext, HWND hWnd, LONG nFiles, LPCSTR*
 SCCRTN _SccQueryInfo(LPVOID pContext, LONG nFiles, LPCSTR* lpFileNames,LPLONG lpStatus,INFOEXCALLBACK cbFunc,LPVOID cbParm){
 	INFOEXCALLBACKPARM cbp;
 	THECONTEXT *ctx=(THECONTEXT *)pContext;
-	ctx->lpComment[0]=0;
+	//ctx->lpComment[0]=0;//guess this is deprecated line
 	DWORD t=GetTickCount();
 	if(cbFunc){
 		memset(&cbp,0,sizeof(cbp));
