@@ -143,10 +143,24 @@ BOOL GetProperty(char*fname,char*pname,char*pvalue,int pvlen){
 /** new work-copy scan callback */
 bool _entries_scanwc_callback(SVNENTRY*e,void*udata) {
 	THECONTEXT* ctx=(THECONTEXT*)udata;
-	if( !strcmp(e->kind,"dir") && e->name[0] ){
-		mstring s=mstring(e->wcpath);
-		s.addPath(e->name);
-		entries_scan(s.c_str(), &_entries_scanwc_callback, udata , ctx->svnwd);
+	if( !strcmp(e->kind,"dir") && !e->name[0] ){
+		//this triggered once for one scan
+		//scan subdirectories
+		WIN32_FIND_DATA ffd;
+		HANDLE ffh;
+		mstring ffp=mstring(e->wcpath);
+		ffp.addPath("*");
+		
+		ffh=FindFirstFile(  ffp.c_str() ,&ffd);
+		if(ffh!=INVALID_HANDLE_VALUE){
+			do{
+				if(ffd.dwFileAttributes&FILE_ATTRIBUTE_DIRECTORY && strcmp(ffd.cFileName,ctx->svnwd) && strcmp(ffd.cFileName,".") && strcmp(ffd.cFileName,"..")){
+					ffp.trunc(-1)->append(ffd.cFileName);
+					entries_scan(ffp.c_str(), &_entries_scanwc_callback, udata , ctx->svnwd);
+				}
+			}while(FindNextFile(ffh,&ffd));
+			FindClose(ffh);
+		}
 	}else if( !strcmp(e->kind,"file") ){
 		//by default local locks are filled from entries
 		//only if it's not filled we try to get it in another way
@@ -163,6 +177,7 @@ bool _entries_scanwc_callback(SVNENTRY*e,void*udata) {
 		//add information into in-memory cache
 		ctx->svni->add(ctx->lpProjName,e->wcpath,e->name,e->revision,e->lockowner);
 	}
+	
 	return true;
 }
 

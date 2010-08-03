@@ -222,10 +222,12 @@ class mstring {
 		}
 		/**
 		 * Truncates string to specified length, returns the new length.
+		 * if newlen<0 then truncate starts from last char
+		 * "abc".trunc(-1) = "ab"
 		 */
 		mstring* trunc(long newlen){
-			if(newlen>length){
-				if(newlen<0)ASSERT(true);
+			if(newlen<0)newlen = (length+newlen>0)?(length+newlen):0 ;
+			if(newlen<length){
 				length=newlen;
 				ptr[length]=0;
 			}
