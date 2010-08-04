@@ -42,8 +42,8 @@ int main(int argc, char *argv[]) {
 	long t=0;
 	int i;
 	
-//	printf("copy=%i\n",CopyFileUTF8("in.srw","out.srw") );
-//	if(1==1)return 0;
+	printf("copy=%i\n",CopyFileUTF8("in.srw","out.srw") );
+	if(1==1)return 0;
 	
 	LONG lpSccCaps,pnCheckoutCommentLen,pnCommentLen;
 	logFile=stdout;

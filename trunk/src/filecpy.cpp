@@ -79,6 +79,10 @@ BOOL CopyFileUTF8(const char*src,char*dst){
 					halen=0;
 					buflen=0;
 				}
+			}else if(buflen==3 && !strncmp( buf, "$$$",buflen )) {
+				//write out one $ and keep in buffer two onces "$$"
+				fwrite( buf, 1 /*elem size*/, 1 /*elem count*/, fout );
+				buflen--;
 			}else{
 				//move everything from buf into out file
 				fwrite( buf, buflen /*elem size*/, 1 /*elem count*/, fout );
