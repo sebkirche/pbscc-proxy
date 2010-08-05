@@ -155,8 +155,9 @@ bool _entries_scanwc_callback(SVNENTRY*e,void*udata) {
 		if(ffh!=INVALID_HANDLE_VALUE){
 			do{
 				if(ffd.dwFileAttributes&FILE_ATTRIBUTE_DIRECTORY && strcmp(ffd.cFileName,ctx->svnwd) && strcmp(ffd.cFileName,".") && strcmp(ffd.cFileName,"..")){
-					ffp.trunc(-1)->append(ffd.cFileName);
-					entries_scan(ffp.c_str(), &_entries_scanwc_callback, udata , ctx->svnwd);
+					mstring subdir=mstring(e->wcpath);
+					subdir.addPath(ffd.cFileName);
+					entries_scan(subdir.c_str(), &_entries_scanwc_callback, udata , ctx->svnwd);
 				}
 			}while(FindNextFile(ffh,&ffd));
 			FindClose(ffh);
@@ -804,6 +805,7 @@ SCCRTN _SccQueryInfo(LPVOID pContext, LONG nFiles, LPCSTR* lpFileNames,LPLONG lp
 	for(int i=0;i<nFiles;i++){
 		lpStatus[i]=SCC_STATUS_NOTCONTROLLED;
 		SVNINFOITEM * svni;
+		log("\tsvni->get( \"%s\" , \"%s\" )\n",ctx->lpProjPath,lpFileNames[i]);
 		if( (svni = ctx->svni->get(ctx->lpProjPath,lpFileNames[i]))!=NULL ){
 			lpStatus[i]=SCC_STATUS_CONTROLLED;
 			if(svni->owner[0]){
