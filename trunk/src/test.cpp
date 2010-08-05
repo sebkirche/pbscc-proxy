@@ -42,8 +42,8 @@ int main(int argc, char *argv[]) {
 	long t=0;
 	int i;
 	
-	printf("copy=%i\n",CopyFileUTF8("in.srw","out.srw") );
-	if(1==1)return 0;
+	//printf("copy=%i\n",CopyFileUTF8("in.srw","out.srw") );
+	//if(1==1)return 0;
 	
 	LONG lpSccCaps,pnCheckoutCommentLen,pnCommentLen;
 	logFile=stdout;
@@ -63,6 +63,11 @@ int main(int argc, char *argv[]) {
 			ScanWC(ctx);
 //		}
 		t=timer(t,"end scan");
+		
+		
+		SVNINFOITEM *svni=ctx->svni->get( "D:\\Home\\Projects\\pbscc-test\\newtest\\pb" , "d:\\home\\projects\\pbscc-test\\newtest\\pb\\tools\\tools.pbt" );
+		ctx->svni->print(svni);
+		
 		for(i=0;i<ctx->svni->getCount();i++)ctx->svni->print(ctx->svni->get(i));
 		printf("count=%i\n\n\n",ctx->svni->getCount());
 		
