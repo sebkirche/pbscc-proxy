@@ -36,14 +36,13 @@ long outproc (LPCSTR msg, DWORD len) {
 }
 
 
-
-
 int main(int argc, char *argv[]) {
 	long t=0;
 	int i;
 	
 	//printf("copy=%i\n",CopyFileUTF8("in.srw","out.srw") );
 	//if(1==1)return 0;
+	
 	
 	LONG lpSccCaps,pnCheckoutCommentLen,pnCommentLen;
 	logFile=stdout;
@@ -54,22 +53,24 @@ int main(int argc, char *argv[]) {
 		THECONTEXT*ctx;
 		
 		SccInitialize( (LPVOID *) &ctx, NULL, "caller","scc", &lpSccCaps, "aux", &pnCheckoutCommentLen, &pnCommentLen);
+		
 		t=timer(t,"SccInitialize end");
 		SccOpenProject(ctx, NULL, "root", wc, "pb-workspace", "aux", "comment", outproc,0);
 		t=timer(t,"SccOpenProject end");
 		
 		
 //		for(i=0;i<5000;i++){
-			ScanWC(ctx);
+//			ScanWC(ctx);
 //		}
-		t=timer(t,"end scan");
-		
-		
-		SVNINFOITEM *svni=ctx->svni->get( "D:\\Home\\Projects\\pbscc-test\\newtest\\pb" , "d:\\home\\projects\\pbscc-test\\newtest\\pb\\tools\\tools.pbt" );
+		ScanWC(ctx);
+	
+		SVNINFOITEM *svni;
+		printf("case 1: \n");
+		svni=ctx->svni->get( "D:\\Home\\Projects\\pbscc-test\\newtest\\pb\\" , "d:\\home\\projects\\pbscc-test\\newtest\\pb/scc.ini",NULL);
 		ctx->svni->print(svni);
 		
-		for(i=0;i<ctx->svni->getCount();i++)ctx->svni->print(ctx->svni->get(i));
-		printf("count=%i\n\n\n",ctx->svni->getCount());
+		//for(i=0;i<ctx->svni->getCount();i++)ctx->svni->print(ctx->svni->get(i));
+		//printf("count=%i\n\n\n",ctx->svni->getCount());
 		
 		SccUninitialize(ctx);
 		

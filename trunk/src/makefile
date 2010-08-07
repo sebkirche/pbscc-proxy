@@ -15,7 +15,7 @@ ver:
 	-SubWCRev . version.hxx tmp\version.h
 
 .cpp.obj:
-	$(cc) -Ox $(cflags) $(cvarsdll) -DSTRICT -YX -DNODEBUG $<
+	$(cc) -Ox $(cflags) $(cvarsdll) -DSTRICT -GX -YX -DNODEBUG $<
 
 x_res: 
 	rc $(rcvars) $(rcflags) -r -fo $(PRJNAME).res $(PRJNAME).rc

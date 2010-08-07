@@ -493,7 +493,7 @@ bool rememberTarget(THECONTEXT*ctx,LONG nFiles,LPCSTR* lpFileNames){
 		long len=strlen(lpFileNames[i]);
 		if( len>4 && !stricmp(".pbt",lpFileNames[i]+len-4) && len<MAXFULLPATH ){
 			strcpy(ctx->PBTarget,lpFileNames[i]);
-			log("target: \"%s\"\n",ctx->PBTarget);
+			//log("target: \"%s\"\n",ctx->PBTarget);
 		}
 	}
 	return true;
@@ -792,6 +792,8 @@ SCCEXTERNC SCCRTN EXTFUN SccGet(LPVOID pContext, HWND hWnd, LONG nFiles, LPCSTR*
 SCCRTN _SccQueryInfo(LPVOID pContext, LONG nFiles, LPCSTR* lpFileNames,LPLONG lpStatus,INFOEXCALLBACK cbFunc,LPVOID cbParm){
 	INFOEXCALLBACKPARM cbp;
 	THECONTEXT *ctx=(THECONTEXT *)pContext;
+	const char* errFile=NULL;
+	int svniErr;
 	//ctx->lpComment[0]=0;//guess this is deprecated line
 	DWORD t=GetTickCount();
 	if(cbFunc){
@@ -806,7 +808,7 @@ SCCRTN _SccQueryInfo(LPVOID pContext, LONG nFiles, LPCSTR* lpFileNames,LPLONG lp
 		lpStatus[i]=SCC_STATUS_NOTCONTROLLED;
 		SVNINFOITEM * svni;
 		log("\tsvni->get( \"%s\" , \"%s\" )\n",ctx->lpProjPath,lpFileNames[i]);
-		if( (svni = ctx->svni->get(ctx->lpProjPath,lpFileNames[i]))!=NULL ){
+		if( (svni = ctx->svni->get(ctx->lpProjPath,lpFileNames[i], &svniErr))!=NULL ){
 			lpStatus[i]=SCC_STATUS_CONTROLLED;
 			if(svni->owner[0]){
 				if(!stricmp(svni->owner,ctx->lpUser))lpStatus[i]=SCC_STATUS_OUTBYUSER|SCC_STATUS_CONTROLLED;
@@ -818,6 +820,10 @@ SCCRTN _SccQueryInfo(LPVOID pContext, LONG nFiles, LPCSTR* lpFileNames,LPLONG lp
 				cbFunc(cbParm,&cbp);
 			}
 		}else{
+			if(svniErr){
+				if(!errFile)errFile=lpFileNames[i];
+				log("\tWARN: Path is out of root\n");
+			}
 			if(cbFunc){
 				cbp.object=(char*)lpFileNames[i];
 				cbp.version="";
@@ -825,6 +831,12 @@ SCCRTN _SccQueryInfo(LPVOID pContext, LONG nFiles, LPCSTR* lpFileNames,LPLONG lp
 			}
 		}
 		//log("\tstat=%04X ver=\"%s\" user=\"%s\" \"%s\"\n",lpStatus[i],ver,user,lpFileNames[i]);
+	}
+	if(errFile){
+		mstring s=mstring("WARN: Path is out of root directory: ");
+		s.append(errFile);
+		_msg(ctx, s.c_str());
+		_msg(ctx,"Probably wrong scc parameter \"Local Root Directory\". It must include all subdirectories of your project." );
 	}
 	log("_SccQueryInfo: ms=%i\n",GetTickCount()-t);
 	return SCC_OK;
@@ -848,7 +860,7 @@ SCCEXTERNC SCCRTN EXTFUN SccCheckout(LPVOID pContext, HWND hWnd, LONG nFiles, LP
 	//do preliminary check
 	for(i=0;i<nFiles;i++){
 		SVNINFOITEM * svni;
-		if( (svni = ctx->svni->get(ctx->lpProjPath,lpFileNames[i]))!=NULL ){
+		if( (svni = ctx->svni->get(ctx->lpProjPath,lpFileNames[i],NULL))!=NULL ){
 			if(svni->owner[0])return SCC_E_ALREADYCHECKEDOUT;
 		}else return SCC_E_FILENOTCONTROLLED;
 	}
@@ -887,7 +899,7 @@ SCCEXTERNC SCCRTN EXTFUN SccUncheckout(LPVOID pContext, HWND hWnd, LONG nFiles, 
 	//do preliminary check
 	for(i=0;i<nFiles;i++){
 		SVNINFOITEM * svni;
-		if( (svni = ctx->svni->get(ctx->lpProjPath,lpFileNames[i]))!=NULL ){
+		if( (svni = ctx->svni->get(ctx->lpProjPath,lpFileNames[i],NULL))!=NULL ){
 			if( stricmp(svni->owner,ctx->lpUser) ) return SCC_E_NOTCHECKEDOUT;
 		}else return SCC_E_FILENOTCONTROLLED;
 	}
@@ -928,7 +940,7 @@ SCCEXTERNC SCCRTN EXTFUN SccCheckin(LPVOID pContext, HWND hWnd, LONG nFiles, LPC
 	
 	for(i=0;i<nFiles;i++){
 		SVNINFOITEM * svni;
-		if( (svni = ctx->svni->get(ctx->lpProjPath,lpFileNames[i]))!=NULL ){
+		if( (svni = ctx->svni->get(ctx->lpProjPath,lpFileNames[i],NULL))!=NULL ){
 			if( stricmp(svni->owner,ctx->lpUser) ) return SCC_E_NOTCHECKEDOUT;
 		}else return SCC_E_FILENOTCONTROLLED;
 		if( !_copyfile(ctx,lpFileNames[i],_subst(ctx, (char*)lpFileNames[i])) )goto error;
@@ -1023,7 +1035,7 @@ SCCEXTERNC SCCRTN EXTFUN SccDiff(LPVOID pContext, HWND hWnd, LPCSTR lpFileName, 
 		log("\tdo visual diff\n");
 		mstring buf;
 		SVNINFOITEM * svni;
-		if( ( svni = ctx->svni->get(ctx->lpProjPath,lpFileName))!=NULL ) {
+		if( ( svni = ctx->svni->get(ctx->lpProjPath,lpFileName,NULL))!=NULL ) {
 			if(!stricmp(svni->owner,ctx->lpUser)){
 				_copyfile(ctx,lpFileName, _subst(ctx,lpFileName) );
 				buf.sprintf("TortoiseProc.exe /command:diff /path:\"%s\"", _subst(ctx,lpFileName) );
