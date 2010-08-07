@@ -28,6 +28,8 @@
 //initial size
 #define __SVNINFO_H__INITSIZE	5000
 
+#define __SVNINFO_ERR_PATH	1
+
 
 
 typedef struct {
@@ -61,12 +63,12 @@ class svninfo {
 			if(len>0) {
 				if(_root[len-1]=='\\' || _root[len-1]=='/')len--;
 				if( CompareString(LOCALE_USER_DEFAULT,NORM_IGNORECASE,_root,len,_path,len)==2 ){
-					if(!_path[len]) return _path+len;
 					if(_path[len]=='\\' || _path[len]=='/' )return _path+len+1;
+					if(!_path[len]) return _path+len;
 				}
 			}
 			//just return the full path
-			return _path;
+			return NULL;
 		}
 		
 		
@@ -98,6 +100,8 @@ class svninfo {
 		 * @param _owner: the lock owner of the element
 		 */
 		void add(const char*_root,const char*_path,const char*_name,const char*_rev,const char*_owner){
+			if( (_path=relativePath(_root,_path))==NULL)return;
+			
 			if(count+1>=size){
 				//reallocate
 				SVNINFOITEM *ptr_old=ptr;
@@ -108,7 +112,6 @@ class svninfo {
 				memcpy(ptr, ptr_old, size_old*sizeof(SVNINFOITEM));
 				delete []ptr_old;
 			}
-			_path=relativePath(_root,_path);
 			
 			ptr[count].path=buf->set(_path)->addPath(_name)->c_copy();
 			ptr[count].rev=buf->set(_rev)->c_copy();
@@ -157,9 +160,15 @@ class svninfo {
 		}
 		*/
 		
-		/** returns svn element by absolute path with root specified */
-		SVNINFOITEM* get(const char*_root, const char*_path){
-			_path=relativePath(_root,_path);
+		/** returns svn element by absolute path with root specified 
+		* @param err ptr to get error code. could be NULL
+		*/
+		SVNINFOITEM* get(const char*_root, const char*_path,int*err){
+			if( (_path=relativePath(_root,_path))==NULL ){
+				if(err)err[0]=__SVNINFO_ERR_PATH;
+				return NULL;
+			}
+			if(err)err[0]=0;
 			int h=hash(_path);
 			for(int i=0;i<count;i++) {
 				if( ptr[i].hash==h ){
