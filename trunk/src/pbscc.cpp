@@ -779,11 +779,14 @@ SCCEXTERNC SCCRTN EXTFUN SccCloseProject(LPVOID pContext){
 SCCEXTERNC SCCRTN EXTFUN SccGet(LPVOID pContext, HWND hWnd, LONG nFiles, LPCSTR* lpFileNames, LONG dwFlags,LPCMDOPTS pvOptions){
 	log("SccGet:\n");
 	THECONTEXT *ctx=(THECONTEXT *)pContext;
-	if(!_sccupdate(ctx,true))return SCC_E_ACCESSFAILURE;
+	if(GetTickCount() - ctx->dwLastGetTime > DELAYFORNEWCOMMENT) {
+		if(!_sccupdate(ctx,true))return SCC_E_ACCESSFAILURE;
+	}
 	for(int i=0;i<nFiles;i++){
 		log("\t%s\n",lpFileNames[i]);
 		if( !_copyfile(ctx,_subst(ctx,(char*)lpFileNames[i]),(char*)lpFileNames[i]) )return SCC_E_NONSPECIFICERROR;
 	}
+	ctx->dwLastGetTime=GetTickCount();
 	return SCC_OK;
 }
 
