@@ -5,23 +5,26 @@
  * `SccQueryInfo`
   * svn update
  * `SccCheckout`
-  * svn update
+  * svn update (force)
   * svn lock
   * copy files
  * `SccUncheckout`
-  * svn update
+  * svn update (force)
   * svn unlock
  * `SccCheckin`
-  * svn update
+  * svn update (force)
   * copy files
   * svn commit
  * `SccAdd`
-  * svn update
+  * svn update (force)
   * copy files
   * svn add
   * svn commit
+ * `SccGet`
+  * svn update (force)
+  * copy files
  * `SccRemove`
-  * svn update
+  * svn update (force)
   * svn delete
   * svn commit
  * `SccHistory`
