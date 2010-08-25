@@ -190,17 +190,38 @@ bool ScanWC(THECONTEXT* ctx) {
 }
 
 
-bool _files2list(THECONTEXT*ctx, LONG nFiles, LPCSTR* lpFileNames){
+/** 
+ * @param createDirs create destination dirs. Normally used for SccAdd.
+ */
+bool _files2list(THECONTEXT*ctx, LONG nFiles, LPCSTR* lpFileNames, BOOL createDirs){
+	bool ret=true;
 	FILE*f=fopen(ctx->lpTargetsTmp,"wt");
 	if(f){
-		for(int i=0;i<nFiles;i++){
-			fputs( _subst( ctx, lpFileNames[i] ), f );
+		for(int j=0;j<nFiles;j++){
+			char * fpath=_subst( ctx, lpFileNames[j] );
+			if(createDirs){
+				for(int i=0; fpath[i]; i++){
+					if(fpath[i]=='/' || fpath[i]=='\\'){
+						fpath[i]=0;
+						if( access(fpath,0) ){
+							if(!CreateDirectory(fpath,NULL)){
+								log("can't create dir %s\n",fpath);
+								ret=false;
+							}
+							fputs( fpath, f );
+							fputs( "\n", f );
+						}
+						fpath[i]='\\';
+					}
+				}
+			}
+			fputs( fpath, f );
 			fputs( "\n", f );
 		}
 		
 		fflush(f);
 		fclose(f);
-		return true;
+		return ret;
 	}
 	return false;
 }
@@ -868,7 +889,7 @@ SCCEXTERNC SCCRTN EXTFUN SccCheckout(LPVOID pContext, HWND hWnd, LONG nFiles, LP
 		}else return SCC_E_FILENOTCONTROLLED;
 	}
 	//do svn operations
-	if (!_files2list(ctx, nFiles, lpFileNames ))return SCC_E_ACCESSFAILURE;
+	if (!_files2list(ctx, nFiles, lpFileNames,false ))return SCC_E_ACCESSFAILURE;
 	
 	if( ctx->lockStrategy&LOCKSTRATEGY_PROP ) {
 		if(!_execscc(ctx,"svn propset --non-interactive --trust-server-cert lockby \"%s\" --targets \"%s\"",ctx->lpUser,ctx->lpTargetsTmp)  )return SCC_E_NONSPECIFICERROR;
@@ -898,7 +919,7 @@ SCCEXTERNC SCCRTN EXTFUN SccUncheckout(LPVOID pContext, HWND hWnd, LONG nFiles, 
 	THECONTEXT *ctx=(THECONTEXT *)pContext;
 	log("SccUncheckout:\n");
 	if(!_sccupdate(ctx,true))return SCC_E_ACCESSFAILURE;
-	if (!_files2list(ctx, nFiles, lpFileNames ))return SCC_E_ACCESSFAILURE;
+	if (!_files2list(ctx, nFiles, lpFileNames, false ))return SCC_E_ACCESSFAILURE;
 	//do preliminary check
 	for(i=0;i<nFiles;i++){
 		SVNINFOITEM * svni;
@@ -939,7 +960,7 @@ SCCEXTERNC SCCRTN EXTFUN SccCheckin(LPVOID pContext, HWND hWnd, LONG nFiles, LPC
 	if( !_getcomment( ctx, hWnd,nFiles,lpFileNames,SCC_COMMAND_CHECKIN) )return SCC_I_OPERATIONCANCELED;
 	
 	if(!_sccupdate(ctx,true))return SCC_E_ACCESSFAILURE;
-	if (!_files2list(ctx, nFiles, lpFileNames ))return SCC_E_ACCESSFAILURE;
+	if (!_files2list(ctx, nFiles, lpFileNames,false ))return SCC_E_ACCESSFAILURE;
 	
 	for(i=0;i<nFiles;i++){
 		SVNINFOITEM * svni;
@@ -978,7 +999,7 @@ SCCEXTERNC SCCRTN EXTFUN SccAdd(LPVOID pContext, HWND hWnd, LONG nFiles, LPCSTR*
 	if( !_getcomment( ctx, hWnd,nFiles,lpFileNames,SCC_COMMAND_ADD) )return SCC_I_OPERATIONCANCELED;
 	
 	if(!_sccupdate(ctx,false))return SCC_E_ACCESSFAILURE;
-	if (!_files2list(ctx, nFiles, lpFileNames ))return SCC_E_ACCESSFAILURE;
+	if (!_files2list(ctx, nFiles, lpFileNames, true ))return SCC_E_ACCESSFAILURE;
 	
 	for(i=0;i<nFiles;i++){
 		if( !_copyfile(ctx,lpFileNames[i],_subst(ctx, (char*)lpFileNames[i])) )return SCC_E_FILENOTEXIST;
@@ -1004,7 +1025,7 @@ SCCEXTERNC SCCRTN EXTFUN SccRemove(LPVOID pContext, HWND hWnd, LONG nFiles, LPCS
 	if( !_getcomment( ctx, hWnd,nFiles,lpFileNames,SCC_COMMAND_REMOVE) )return SCC_I_OPERATIONCANCELED;
 	
 	if(!_sccupdate(ctx,false))return SCC_E_ACCESSFAILURE;
-	if (!_files2list(ctx, nFiles, lpFileNames ))return SCC_E_ACCESSFAILURE;
+	if (!_files2list(ctx, nFiles, lpFileNames,false ))return SCC_E_ACCESSFAILURE;
 
 	for(int i=0;i<nFiles;i++){
 		SetFileAttributes(_subst(ctx, (char*)lpFileNames[i]),FILE_ATTRIBUTE_NORMAL);
