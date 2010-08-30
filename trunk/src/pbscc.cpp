@@ -230,7 +230,7 @@ bool _msg2file(THECONTEXT*ctx, char*prefix){
 	FILE*f=fopen(ctx->lpMsgTmp,"wt");
 	if(f){
 		if(prefix)fputs( prefix , f );
-		fputs( ctx->lpComment , f );
+		fputs( ctx->comment->c_str() , f );
 		fflush(f);
 		fclose(f);
 		return true;
@@ -392,12 +392,10 @@ BOOL CALLBACK DialogProcComment(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam){
 					break;
 				case IDOK:
 					THECONTEXT*ctx;
-					char buf[PBSCC_CMTLENALL];
 					ctx=(THECONTEXT*)GetWindowLong(hwnd,GWL_USERDATA);
-					SendDlgItemMessage(hwnd,IDC_COMBO_MSG,WM_GETTEXT,PBSCC_MSGLEN+1,(LPARAM) buf);
-					strcpy(ctx->lpComment,buf);
+					ctx->comment->getWindowText(hwnd,IDC_COMBO_MSG);
 					//store entered message
-					SendMessage(hwnd,WM_COMMENTHST,true, (LPARAM)buf);
+					SendMessage(hwnd,WM_COMMENTHST,true, (LPARAM)ctx->comment->c_str());
 					//close window
 					SendMessage(hwnd,WM_CLOSE,0,0);
 					break;
@@ -529,10 +527,10 @@ bool _getcomment(THECONTEXT*ctx,HWND hWnd,LONG nFiles, LPCSTR* lpFileNames,SCCCO
 	ctx->eSCCCommand=icmd;
 	
 	if( !needComment(ctx) ) return true;
-	ctx->lpComment[0]=0;
+	ctx->comment->set(NULL);
 	if( DialogBoxParam(hInstance,MAKEINTRESOURCE(dlgID),hWnd,&DialogProcComment,(LPARAM)ctx)==0 ){
-		log("_getcomment: %s\n",ctx->lpComment);
-		if(ctx->lpComment[0])return true;
+		log("_getcomment: %s\n",ctx->comment->c_str());
+		if(ctx->comment->len()>0)return true;
 	}
 	return false;
 }
@@ -558,8 +556,8 @@ SCCEXTERNC SCCRTN EXTFUN SccInitialize(LPVOID * ppContext, HWND hWnd, LPCSTR lpC
 	strcpy(lpSccName,gpSccName);
 	lpSccCaps[0]=0x200828D;
 	lpAuxPathLabel[0]=0;
-	pnCheckoutCommentLen[0]=PBSCC_CMTLENALL+1;
-	pnCommentLen[0]=PBSCC_CMTLENALL+1;
+	pnCheckoutCommentLen[0]=PBSCC_MSGLEN+1;
+	pnCommentLen[0]=PBSCC_MSGLEN+1;
 	ppContext[0]=ctx;
 	
 	
@@ -615,6 +613,7 @@ SCCEXTERNC SCCRTN EXTFUN SccInitialize(LPVOID * ppContext, HWND hWnd, LPCSTR lpC
 	log("\t err pipe       : %s\n",ctx->lpErrTmp);
 	log("\t msg pipe       : %s\n",ctx->lpMsgTmp);
 	
+	ctx->comment=new mstring();
 	ctx->pipeOut=new mstring();
 	ctx->pipeErr=new mstring();
 	ctx->svni=new svninfo();
@@ -636,6 +635,7 @@ SCCEXTERNC SCCRTN EXTFUN SccUninitialize(LPVOID pContext){
 	DeleteFile(ctx->lpErrTmp); //delete temp file
 	DeleteFile(ctx->lpMsgTmp); //delete temp file
 	
+	delete ctx->comment;
 	delete ctx->pipeOut;
 	delete ctx->pipeErr;
 	delete ctx->svni;

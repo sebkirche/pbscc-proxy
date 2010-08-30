@@ -233,6 +233,14 @@ class mstring {
 			}
 			return this;
 		}
+		
+		
+		mstring* getWindowText(HWND hwnd, int dlgItem){
+			length=SendDlgItemMessage(hwnd,dlgItem,WM_GETTEXTLENGTH,0,0);
+			realloc(length+1);
+			SendDlgItemMessage(hwnd,dlgItem,WM_GETTEXT,length+1,(LPARAM) ptr);
+			return this;
+		}
 
 		
 		void vsprintf(LPCTSTR lpszFormat, va_list argList){
