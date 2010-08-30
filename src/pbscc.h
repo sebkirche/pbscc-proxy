@@ -22,10 +22,7 @@
 #include "svninfo.h"
 
 #define PBSCC_REVLEN  100
-//#define PBSCC_VERLEN  64
-//#define PBSCC_DDBLEN  120
-#define PBSCC_MSGLEN  100
-#define PBSCC_CMTLENALL 350 //PBSCC_VERLEN+PBSCC_DDBLEN+PBSCC_CMTLEN+60 for specsymbols like: <ddb></ddb>...
+#define PBSCC_MSGLEN  2000
 #define MAXFULLPATH 4000
 
 #define PBSCC_UID  30
@@ -67,7 +64,7 @@ typedef struct {
 	CHAR          lpProjPath[SCC_PRJPATH_LEN+1]; //local project path of PB
 	int           cbProjPath;       //the lenght of the project path
 	CHAR          lpUser[SCC_USER_LEN+1];
-	CHAR          lpComment[PBSCC_CMTLENALL+1];
+	mstring*      comment;
 	LPTEXTOUTPROC lpOutProc;        //the output client procedure
 	DWORD         dwLastUpdateTime; //the time(tick) of the last update operation
 	DWORD         dwLastCommitTime; //the time(tick) of the last commit operation
