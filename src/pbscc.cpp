@@ -186,7 +186,9 @@ bool _entries_scanwc_callback(SVNENTRY*e,void*udata) {
 //svni could be a part of the context
 bool ScanWC(THECONTEXT* ctx) {
 	ctx->svni->reset();
-	return entries_scan(ctx->lpProjName, &_entries_scanwc_callback, (void*) ctx , ctx->svnwd);
+	bool b=entries_scan(ctx->lpProjName, &_entries_scanwc_callback, (void*) ctx , ctx->svnwd);
+	ctx->svni->print(logFile);
+	return b;
 }
 
 
@@ -336,7 +338,7 @@ BOOL CALLBACK DialogProcComment(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam){
 				ctx=(THECONTEXT*)GetWindowLong(hwnd,GWL_USERDATA);
 				BOOL enableOK;
 				enableOK=TRUE;
-				enableOK &= ( SendDlgItemMessage(hwnd,IDC_COMBO_MSG,WM_GETTEXTLENGTH,0,0) >0 );
+				enableOK &= ( SendDlgItemMessage(hwnd,IDC_EDIT_MSG,WM_GETTEXTLENGTH,0,0) >0 );
 
 				EnableWindow( GetDlgItem(hwnd,IDOK)  , enableOK );
 				break;
@@ -393,17 +395,26 @@ BOOL CALLBACK DialogProcComment(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam){
 				case IDOK:
 					THECONTEXT*ctx;
 					ctx=(THECONTEXT*)GetWindowLong(hwnd,GWL_USERDATA);
-					ctx->comment->getWindowText(hwnd,IDC_COMBO_MSG);
+					ctx->comment->getWindowText(hwnd,IDC_EDIT_MSG);
 					//store entered message
 					SendMessage(hwnd,WM_COMMENTHST,true, (LPARAM)ctx->comment->c_str());
 					//close window
 					SendMessage(hwnd,WM_CLOSE,0,0);
 					break;
+				case IDC_EDIT_MSG:
+					PostMessage(hwnd,WM_MANAGEOK,0,0);
+					break;
 				case IDC_COMBO_MSG:
 					switch( HIWORD(wParam) ){
-						case CBN_EDITCHANGE:
-						case CBN_SELCHANGE:
-						case CBN_CLOSEUP:
+						//case CBN_SELCHANGE:
+						//case CBN_CLOSEUP:
+						case CBN_SELENDOK:
+							//if( SendDlgItemMessage(hwnd,IDC_COMBO_MSG,CB_GETCURSEL,0,0) ==-1 )break;
+							mstring s=mstring();
+							s.getWindowText(hwnd,IDC_COMBO_MSG);
+							SendDlgItemMessage(hwnd,IDC_EDIT_MSG,WM_SETTEXT,0,(LPARAM) s.c_str());
+							PostMessage(hwnd,UM_SETFOCUS,IDC_EDIT_MSG,0);
+							//SendDlgItemMessage(hwnd,IDC_COMBO_MSG,CB_SETEDITSEL,0,(LPARAM) 0);
 							PostMessage(hwnd,WM_MANAGEOK,0,0);
 							break;
 					};
@@ -416,7 +427,7 @@ BOOL CALLBACK DialogProcComment(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam){
 			char *sCommand;
 			ctx=(THECONTEXT*)lParam ;
 			SetWindowLong(hwnd,	GWL_USERDATA,(LONG) lParam);
-			SendDlgItemMessage(hwnd,IDC_COMBO_MSG,CB_LIMITTEXT,PBSCC_MSGLEN,0);
+			SendDlgItemMessage(hwnd,IDC_EDIT_MSG,CB_LIMITTEXT,PBSCC_MSGLEN,0);
 			
 			
 			switch(ctx->eSCCCommand){
@@ -448,7 +459,7 @@ BOOL CALLBACK DialogProcComment(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam){
 				SendDlgItemMessage(hwnd,IDC_PATH,EM_REPLACESEL,0,(LPARAM)"\r\n");
 			}
 
-			PostMessage(hwnd,UM_SETFOCUS,IDC_COMBO_MSG,0);
+			PostMessage(hwnd,UM_SETFOCUS,IDC_EDIT_MSG,0);
 			//restore message history
 			SendMessage(hwnd,WM_COMMENTHST,false,0);
 			//manage OK button (disable in this case)
@@ -777,7 +788,10 @@ SCCEXTERNC SCCRTN EXTFUN SccOpenProject(LPVOID pContext,HWND hWnd, LPSTR lpUser,
 		if(ctx->exportEncode==EENCODE_NONE)s.append("none");
 		_msg(ctx,s.c_str() );
 		log("\t%s\n",s.c_str());
+		
 	}
+	//do second update with force. after scc.ini loaded. TODO: redo this code to avoid double update
+	if(!_sccupdate(ctx,true))return SCC_E_INITIALIZEFAILED;
 	
 	if(!PBGetVersion(ctx->PBVersion))ctx->PBVersion[0]=0;//get pb version
 	
@@ -830,9 +844,9 @@ SCCRTN _SccQueryInfo(LPVOID pContext, LONG nFiles, LPCSTR* lpFileNames,LPLONG lp
 
 	for(int i=0;i<nFiles;i++){
 		lpStatus[i]=SCC_STATUS_NOTCONTROLLED;
-		SVNINFOITEM * svni;
-		log("\tsvni->get( \"%s\" , \"%s\" )\n",ctx->lpProjPath,lpFileNames[i]);
-		if( (svni = ctx->svni->get(ctx->lpProjPath,lpFileNames[i], &svniErr))!=NULL ){
+		SVNINFOITEM * svni = ctx->svni->get(ctx->lpProjPath,lpFileNames[i], &svniErr);
+		log("\tsvni->get( \"%s\" , \"%s\" )=%s\n",ctx->lpProjPath,lpFileNames[i],(svni?svni->owner:"null"));
+		if( svni !=NULL ){
 			lpStatus[i]=SCC_STATUS_CONTROLLED;
 			if(svni->owner[0]){
 				if(!stricmp(svni->owner,ctx->lpUser))lpStatus[i]=SCC_STATUS_OUTBYUSER|SCC_STATUS_CONTROLLED;
@@ -883,8 +897,9 @@ SCCEXTERNC SCCRTN EXTFUN SccCheckout(LPVOID pContext, HWND hWnd, LONG nFiles, LP
 	if(!_sccupdate(ctx,true))return SCC_E_ACCESSFAILURE;
 	//do preliminary check
 	for(i=0;i<nFiles;i++){
-		SVNINFOITEM * svni;
-		if( (svni = ctx->svni->get(ctx->lpProjPath,lpFileNames[i],NULL))!=NULL ){
+		SVNINFOITEM * svni = ctx->svni->get(ctx->lpProjPath,lpFileNames[i],NULL);
+		log("\tsvni->get( \"%s\" , \"%s\" )=%s\n",ctx->lpProjPath,lpFileNames[i],(svni?svni->owner:"null"));
+		if( svni!=NULL ){
 			if(svni->owner[0])return SCC_E_ALREADYCHECKEDOUT;
 		}else return SCC_E_FILENOTCONTROLLED;
 	}

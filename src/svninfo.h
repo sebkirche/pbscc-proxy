@@ -133,9 +133,18 @@ class svninfo {
 			count=0;
 		}
 		
-		void print(SVNINFOITEM*e){
-			if(!e)printf("(null)\n");
-			else printf("%s, %i, %s\n",e->path, e->rev, e->owner);
+		void print(SVNINFOITEM*e,FILE*f){
+			if(!e)fprintf(f,"\t(null)\n");
+			else fprintf(f,"\t%s, %s, %s\n",e->path, e->rev, e->owner);
+		}
+		
+		void print(FILE*f){
+			if(f==NULL)return;
+			fprintf(f,"SVNINFO>> (%i)\n",count);
+			for(int i=0;i<count;i++){
+				print(&ptr[i],f);
+			}
+			fprintf(f,"<<SVNINFO\n",count);
 		}
 		
 		/** returns element count */
