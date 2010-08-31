@@ -229,7 +229,7 @@ bool _files2list(THECONTEXT*ctx, LONG nFiles, LPCSTR* lpFileNames, BOOL createDi
 }
 
 bool _msg2file(THECONTEXT*ctx, char*prefix){
-	FILE*f=fopen(ctx->lpMsgTmp,"wt");
+	FILE*f=fopen(ctx->lpMsgTmp,"wb");
 	if(f){
 		if(prefix)fputs( prefix , f );
 		fputs( ctx->comment->c_str() , f );
