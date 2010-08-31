@@ -67,7 +67,7 @@ int main(int argc, char *argv[]) {
 		SVNINFOITEM *svni;
 		printf("case 1: \n");
 		svni=ctx->svni->get( "D:\\Home\\Projects\\pbscc-test\\newtest\\pb\\" , "d:\\home\\projects\\pbscc-test\\newtest\\pb/scc.ini",NULL);
-		ctx->svni->print(svni);
+		ctx->svni->print(svni,stdout);
 		
 		//for(i=0;i<ctx->svni->getCount();i++)ctx->svni->print(ctx->svni->get(i));
 		//printf("count=%i\n\n\n",ctx->svni->getCount());
