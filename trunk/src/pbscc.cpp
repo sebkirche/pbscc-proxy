@@ -357,10 +357,10 @@ BOOL CALLBACK DialogProcComment(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam){
 					//find/replace old value in a list.
 					i=(int)SendDlgItemMessage(hwnd,IDC_COMBO_MSG,CB_FINDSTRINGEXACT,-1,lParam);
 					if(i!=CB_ERR)SendDlgItemMessage(hwnd,IDC_COMBO_MSG,CB_DELETESTRING,i,0);
-					SendDlgItemMessage(hwnd,IDC_COMBO_MSG,CB_INSERTSTRING,0,lParam);
+					SendDlgItemMessage(hwnd,IDC_COMBO_MSG,CB_INSERTSTRING,1,lParam);
 				}
-				for(i=0;i<10;i++){
-					sprintf(key,"cmt.%02i",i);
+				for(i=1;i<=PBSCC_HSTCNT;i++){
+					sprintf(key,"cmt.%02i",i-1);
 					if(wParam){
 						if(i< SendDlgItemMessage(hwnd,IDC_COMBO_MSG,CB_GETCOUNT,0,0) ){
 							if( SendDlgItemMessage(hwnd,IDC_COMBO_MSG,CB_GETLBTEXTLEN,i,0)<=PBSCC_MSGLEN ){
@@ -371,6 +371,7 @@ BOOL CALLBACK DialogProcComment(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam){
 					}else{
 						int err;
 						buflen=PBSCC_MSGLEN+2;
+						if(i==1)SendDlgItemMessage(hwnd,IDC_COMBO_MSG,CB_ADDSTRING,0,(LPARAM)"");
 						err=RegQueryValueEx(rkey,key,NULL,&type,(LPBYTE)buf,&buflen);
 						if(err==ERROR_SUCCESS){
 							buf[PBSCC_MSGLEN]=0;//just in case. to prevent longer rows.
@@ -412,10 +413,12 @@ BOOL CALLBACK DialogProcComment(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam){
 							//if( SendDlgItemMessage(hwnd,IDC_COMBO_MSG,CB_GETCURSEL,0,0) ==-1 )break;
 							mstring s=mstring();
 							s.getWindowText(hwnd,IDC_COMBO_MSG);
-							SendDlgItemMessage(hwnd,IDC_EDIT_MSG,WM_SETTEXT,0,(LPARAM) s.c_str());
-							PostMessage(hwnd,UM_SETFOCUS,IDC_EDIT_MSG,0);
-							//SendDlgItemMessage(hwnd,IDC_COMBO_MSG,CB_SETEDITSEL,0,(LPARAM) 0);
-							PostMessage(hwnd,WM_MANAGEOK,0,0);
+							if(s.len()>0){
+								SendDlgItemMessage(hwnd,IDC_EDIT_MSG,WM_SETTEXT,0,(LPARAM) s.c_str());
+								PostMessage(hwnd,UM_SETFOCUS,IDC_EDIT_MSG,0);
+								SendDlgItemMessage(hwnd,IDC_COMBO_MSG,CB_SETCURSEL,0,(LPARAM) 0);
+								PostMessage(hwnd,WM_MANAGEOK,0,0);
+							}
 							break;
 					};
 					break;
