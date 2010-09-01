@@ -24,6 +24,7 @@
 #define PBSCC_REVLEN  100
 #define PBSCC_MSGLEN  2000
 #define MAXFULLPATH 4000
+#define PBSCC_HSTCNT 12
 
 #define PBSCC_UID  30
 
