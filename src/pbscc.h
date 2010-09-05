@@ -84,7 +84,8 @@ typedef struct {
 	CHAR          lpMsgTmp[MAXFULLPATH]; //the path where this context will store user message
 //	bool          noDDB; //is true if no ddb is set in registry
 //	bool          doLock; //info from registry: shows if we want to lock on checkout.
-	int           lockStrategy; //info from registry: shows if we want to manage locks.
+	int           lockStrategy; //scc.ini: shows if we want to manage locks.
+	bool          messagePrefix; //scc.ini: if we want to display predefined prefix on commit
 	unsigned long cacheTtlMs;  //info from registry: time to live for cache in milliseconds
 	mstring*      pipeOut;     //here we are storing stdout of the child process
 	mstring*      pipeErr;     //here we are storing stderr of the child process
