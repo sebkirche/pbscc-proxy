@@ -231,7 +231,7 @@ bool _files2list(THECONTEXT*ctx, LONG nFiles, LPCSTR* lpFileNames, BOOL createDi
 bool _msg2file(THECONTEXT*ctx, char*prefix){
 	FILE*f=fopen(ctx->lpMsgTmp,"wb");
 	if(f){
-		if(prefix)fputs( prefix , f );
+		if(prefix && ctx->messagePrefix)fputs( prefix , f );
 		fputs( ctx->comment->c_str() , f );
 		fflush(f);
 		fclose(f);
@@ -769,6 +769,12 @@ SCCEXTERNC SCCRTN EXTFUN SccOpenProject(LPVOID pContext,HWND hWnd, LPSTR lpUser,
 		}
 		
 		log("read scc.ini\n");
+		//get message prefix
+		s.getIniString("config","message.prefix","", buf.c_str() );
+		if(!strcmp(s.c_str(),"true"))ctx->messagePrefix=true;
+		else ctx->messagePrefix=false;
+		
+
 		
 		//get lock strategy
 		s.getIniString("config","lock.strategy","", buf.c_str() );
