@@ -1028,7 +1028,7 @@ SCCEXTERNC SCCRTN EXTFUN SccAdd(LPVOID pContext, HWND hWnd, LONG nFiles, LPCSTR*
 	for(i=0;i<nFiles;i++){
 		if( !_copyfile(ctx,lpFileNames[i],_subst(ctx, (char*)lpFileNames[i])) )return SCC_E_FILENOTEXIST;
 	}
-	if(!_execscc(ctx,"svn add --non-interactive --trust-server-cert --targets \"%s\"",ctx->lpTargetsTmp)  )goto error;
+	if(!_execscc(ctx,"svn add --non-interactive --force --non-recursive --trust-server-cert --targets \"%s\"",ctx->lpTargetsTmp)  )goto error;
 	if(!_scccommit(ctx,SCC_COMMAND_ADD ))goto error;
 	
 	if(!_sccupdate(ctx,true))return SCC_E_ACCESSFAILURE;
