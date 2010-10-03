@@ -37,6 +37,7 @@ typedef struct {
 	char       *path;     // relative path to file
 	char       *rev;      // revision 
 	char       *owner;    // object owner (locker)
+	bool       isOwner;   // true if current user is the owner
 }SVNINFOITEM;
 
 
@@ -99,7 +100,7 @@ class svninfo {
 		 * @param _rev : the revision of the element
 		 * @param _owner: the lock owner of the element
 		 */
-		void add(const char*_root,const char*_path,const char*_name,const char*_rev,const char*_owner){
+		void add(const char*_root,const char*_path,const char*_name,const char*_rev,const char*_owner,bool _isOwner){
 			if( (_path=relativePath(_root,_path))==NULL)return;
 			
 			if(count+1>=size){
@@ -117,6 +118,7 @@ class svninfo {
 			ptr[count].rev=buf->set(_rev)->c_copy();
 			ptr[count].owner=buf->set(_owner)->c_copy();
 			ptr[count].hash=hash(ptr[count].path);
+			ptr[count].isOwner=_isOwner;
 			count++;
 		}
 		
