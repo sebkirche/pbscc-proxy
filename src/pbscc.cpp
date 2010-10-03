@@ -163,10 +163,15 @@ bool _entries_scanwc_callback(SVNENTRY*e,void*udata) {
 			FindClose(ffh);
 		}
 	}else if( !strcmp(e->kind,"file") ){
+		//isOwner calculated in a different way for different lock strategies.
+		bool isOwner=false;
 		//by default local locks are filled from entries
 		//only if it's not filled we try to get it in another way
 		if( ctx->lockStrategy & LOCKSTRATEGY_LOCK ){
 			//TODO: get server locks not implemented yet
+			
+			// e->lockowner filled only for local locks. so, if it's not empty, we are the owners.
+			isOwner=e->lockowner[0];
 		}
 		if( ctx->lockStrategy & LOCKSTRATEGY_PROP ){
 			//let's get lockby property
@@ -174,9 +179,10 @@ bool _entries_scanwc_callback(SVNENTRY*e,void*udata) {
 			//build properties file path
 			propPath.set(e->wcpath)->addPath(ctx->svnwd)->addPath("prop-base")->addPath(e->name)->append(".svn-base");
 			GetProperty(propPath.c_str(),"lockby",e->lockowner,ES_SIMPLE_LEN);
+			isOwner=(! stricmp(e->lockowner,ctx->lpUser) );
 		}
 		//add information into in-memory cache
-		ctx->svni->add(ctx->lpProjName,e->wcpath,e->name,e->revision,e->lockowner);
+		ctx->svni->add(ctx->lpProjName,e->wcpath,e->name,e->revision,e->lockowner,isOwner);
 	}
 	
 	return true;
@@ -858,7 +864,7 @@ SCCRTN _SccQueryInfo(LPVOID pContext, LONG nFiles, LPCSTR* lpFileNames,LPLONG lp
 		if( svni !=NULL ){
 			lpStatus[i]=SCC_STATUS_CONTROLLED;
 			if(svni->owner[0]){
-				if(!stricmp(svni->owner,ctx->lpUser))lpStatus[i]=SCC_STATUS_OUTBYUSER|SCC_STATUS_CONTROLLED;
+				if(svni->isOwner)lpStatus[i]=SCC_STATUS_OUTBYUSER|SCC_STATUS_CONTROLLED;
 				else lpStatus[i]=SCC_STATUS_OUTOTHER|SCC_STATUS_CONTROLLED;
 			}
 			if(cbFunc){
@@ -948,7 +954,7 @@ SCCEXTERNC SCCRTN EXTFUN SccUncheckout(LPVOID pContext, HWND hWnd, LONG nFiles, 
 	for(i=0;i<nFiles;i++){
 		SVNINFOITEM * svni;
 		if( (svni = ctx->svni->get(ctx->lpProjPath,lpFileNames[i],NULL))!=NULL ){
-			if( stricmp(svni->owner,ctx->lpUser) ) return SCC_E_NOTCHECKEDOUT;
+			if( !svni->isOwner ) return SCC_E_NOTCHECKEDOUT;
 		}else return SCC_E_FILENOTCONTROLLED;
 	}
 	
@@ -989,7 +995,7 @@ SCCEXTERNC SCCRTN EXTFUN SccCheckin(LPVOID pContext, HWND hWnd, LONG nFiles, LPC
 	for(i=0;i<nFiles;i++){
 		SVNINFOITEM * svni;
 		if( (svni = ctx->svni->get(ctx->lpProjPath,lpFileNames[i],NULL))!=NULL ){
-			if( stricmp(svni->owner,ctx->lpUser) ) return SCC_E_NOTCHECKEDOUT;
+			if( !svni->isOwner ) return SCC_E_NOTCHECKEDOUT;
 		}else return SCC_E_FILENOTCONTROLLED;
 		if( !_copyfile(ctx,lpFileNames[i],_subst(ctx, (char*)lpFileNames[i])) )goto error;
 	}
@@ -1084,7 +1090,7 @@ SCCEXTERNC SCCRTN EXTFUN SccDiff(LPVOID pContext, HWND hWnd, LPCSTR lpFileName, 
 		mstring buf;
 		SVNINFOITEM * svni;
 		if( ( svni = ctx->svni->get(ctx->lpProjPath,lpFileName,NULL))!=NULL ) {
-			if(!stricmp(svni->owner,ctx->lpUser)){
+			if(svni->isOwner){
 				_copyfile(ctx,lpFileName, _subst(ctx,lpFileName) );
 				buf.sprintf("TortoiseProc.exe /command:diff /path:\"%s\"", _subst(ctx,lpFileName) );
 				WinExec(buf.c_str(), SW_SHOW);
