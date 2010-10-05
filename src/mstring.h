@@ -84,6 +84,11 @@ class mstring {
 			//printf("destroy\n");
 		}
 		
+		// operator to cast to a TCHAR*
+		operator TCHAR *() {
+			return ptr;
+		}
+		
 		TCHAR * c_str(){
 			return ptr;
 		}
@@ -206,8 +211,10 @@ class mstring {
 		}
 		
 		mstring* addPath(const TCHAR * c){
-			toDir();
-			append(c);
+			if( c && c[0] ){
+				toDir();
+				append(c);
+			}
 			return this;
 		}
 		
