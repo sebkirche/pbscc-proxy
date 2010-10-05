@@ -63,10 +63,10 @@ class svninfo {
 			int len=strlen(_root); //length of the _root must be less or equal to _path
 			if(len>0) {
 				if(_root[len-1]=='\\' || _root[len-1]=='/')len--;
-				if( CompareString(LOCALE_USER_DEFAULT,NORM_IGNORECASE,_root,len,_path,len)==2 ){
-					if(_path[len]=='\\' || _path[len]=='/' )return _path+len+1;
-					if(!_path[len]) return _path+len;
-				}
+			}
+			if( CompareString(LOCALE_USER_DEFAULT,NORM_IGNORECASE,_root,len,_path,len)==2 ){
+				if(_path[len]=='\\' || _path[len]=='/' )return _path+len+1;
+				if(!_path[len]) return _path+len;
 			}
 			//just return the full path
 			return NULL;
@@ -99,6 +99,7 @@ class svninfo {
 		 * @param _name: the name of the element we want to add (could be empty if _path contains the full path) 
 		 * @param _rev : the revision of the element
 		 * @param _owner: the lock owner of the element
+		 * @param _isOwner: is current object is locked by current user
 		 */
 		void add(const char*_root,const char*_path,const char*_name,const char*_rev,const char*_owner,bool _isOwner){
 			if( (_path=relativePath(_root,_path))==NULL)return;
