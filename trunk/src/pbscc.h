@@ -70,6 +70,7 @@ typedef struct {
 	DWORD         dwLastUpdateTime; //the time(tick) of the last update operation
 	DWORD         dwLastCommitTime; //the time(tick) of the last commit operation
 	DWORD         dwLastGetTime;    //the time(tick) of the last SccGet operation ended
+	DWORD         dwLastScanTime;   //the time of last scan operation
 	bool          isLastAddRemove;  //contains true if last operation was add or remove
 //	FILE          *fddb;
 	CHAR          PBVersion[MAX_PATH+1]; //the version of the powerbuilder
@@ -117,5 +118,5 @@ bool _loginscc(THECONTEXT*ctx);
 void _msg(THECONTEXT*ctx,char * s);
 extern HINSTANCE	hInstance;
 
-bool ScanWC(THECONTEXT* ctx);
+bool ScanWC(THECONTEXT* ctx,bool force);
 

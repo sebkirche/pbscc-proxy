@@ -138,7 +138,7 @@ class svninfo {
 		
 		void print(SVNINFOITEM*e,FILE*f){
 			if(!e)fprintf(f,"\t(null)\n");
-			else fprintf(f,"\t%s, %s, %s\n",e->path, e->rev, e->owner);
+			else fprintf(f,"\t%s, %s, %s, %i\n",e->path, e->rev, e->owner, e->isOwner);
 		}
 		
 		void print(FILE*f){
@@ -188,6 +188,18 @@ class svninfo {
 				}
 			}
 			return NULL;
+		}
+		
+		bool setIsOwner(const char*_root, const char*_path,bool b){
+			int err=0;
+			SVNINFOITEM * item=get(_root,_path,&err);
+			if(item){
+				item->isOwner=b;                  //set or remove isOwner flag for a file
+				if(item->owner)item->owner[0]=0;  //remove owner name in any case
+			}else if(err){
+				return false;
+			}
+			return true;
 		}
 	
 };	

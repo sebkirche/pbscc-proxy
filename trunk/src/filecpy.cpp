@@ -166,7 +166,7 @@ BOOL CopyFileUTF8(const char*src,char*dst){
 	return false;
 	
 }
-
+/*
 TCHAR*DELIMHEXASCII	=_T("$$");
 TCHAR*OPENHEXASCII	=_T("$$HEX");
 TCHAR*CLOSEHEXASCII	=_T("$$ENDHEX$$");
@@ -226,3 +226,4 @@ BOOL HADecode(TCHAR * buf){
 	
 	return true;
 }
+*/

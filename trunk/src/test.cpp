@@ -40,8 +40,8 @@ int main(int argc, char *argv[]) {
 	long t=0;
 	int i;
 	
-	//printf("copy=%i\n",CopyFileUTF8("in.srw","out.srw") );
-	//if(1==1)return 0;
+	printf("copy=%i\n",CopyFileUTF8("in.srw","out.srw") );
+	if(1==1)return 0;
 	
 	
 	LONG lpSccCaps,pnCheckoutCommentLen,pnCommentLen;
@@ -62,7 +62,7 @@ int main(int argc, char *argv[]) {
 //		for(i=0;i<5000;i++){
 //			ScanWC(ctx);
 //		}
-		ScanWC(ctx);
+		ScanWC(ctx,false);
 	
 		SVNINFOITEM *svni;
 		printf("case 1: \n");

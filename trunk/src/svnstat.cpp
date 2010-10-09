@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include "expat.h"
 #include "mstring.h"
+#include "svninfo.h"
 
 #define BUF_SIZE	512
 
@@ -100,7 +101,7 @@ endElement(void *userData, const char *name) {
 		}
 	}else if( !strcmp(name,"entry") ){
 		//store entry into svninfo class
-		svni->add(udata->target, udata->entry, NULL, udata->revision, udata->rOwner, udata->wOwner.len()>0 );
+		udata->svni->add(udata->target, udata->entry, NULL, udata->revision, udata->rOwner, udata->wOwner.len()>0 );
 	}
 	
 	//clear data
@@ -114,12 +115,11 @@ dataHandler(void *userData, const XML_Char *s, int len) {
 }
 
 
-bool parseSvnStatus(char*filename,svninfo*svni){
+bool parseSvnStatus(char*filename,svninfo*svni,mstring*err){
 	int read;
-	mstring err=mstring();
 	XMLUDATA udata;
 	udata.status=STPARSE_DEF;
-	
+	err->set(NULL);
 	XML_Parser p = XML_ParserCreate(NULL);
 	XML_SetElementHandler(p, startElement, endElement);
 	XML_SetCharacterDataHandler(p, dataHandler);
@@ -135,17 +135,16 @@ bool parseSvnStatus(char*filename,svninfo*svni){
 			read=fread(buf,1,BUF_SIZE,f);
 			if (! XML_ParseBuffer(p, read, /*isFinal*/(read == 0) )){
 				//handle error here
-				err.sprintf("%s at line %i\n", XML_ErrorString(XML_GetErrorCode(p)), XML_GetCurrentLineNumber(p));
+				err->sprintf("%s at line %i\n", XML_ErrorString(XML_GetErrorCode(p)), XML_GetCurrentLineNumber(p));
 			}
 			
-		}while(read>0 && err.len()==0);
+		}while(read>0 && err->len()==0);
 		fclose(f);
 	}else{
-		err.set("can't open file");
+		err->sprintf("can't open file \"%s\"",filename);
 	}
 	XML_ParserFree(p);
-	TODO!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	return false;
+	return (err->len()==0);
 }
 
 

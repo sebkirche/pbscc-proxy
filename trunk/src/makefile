@@ -5,7 +5,7 @@ PRJNAME=pbscc
 LIB_FILES= KERNEL32.lib USER32.lib SHELL32.LIB ADVAPI32.LIB wininet.lib lib\libexpat.lib
 
 
-CPP_FILES= pbscc.cpp todo.cpp easystr.cpp entries.cpp filecmp.cpp conproc.cpp login.cpp test.cpp filecpy.cpp
+CPP_FILES= pbscc.cpp todo.cpp easystr.cpp entries.cpp filecmp.cpp conproc.cpp login.cpp filecpy.cpp svnstat.cpp test.cpp
 
 OBJS= $(CPP_FILES:.cpp=.obj)
 
