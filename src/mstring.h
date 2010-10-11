@@ -96,10 +96,17 @@ class mstring {
 		/** returns the copy of the buffer allocated with new[] operator
 		 *  you must free this allocated memory with delete[] operator
 		 */
-		TCHAR * c_copy(){
-			if(ptr==NULL)return NULL;
-			TCHAR *cpy=new TCHAR[length+1];
-			_tcscpy(cpy,ptr);
+		TCHAR * c_copy(TCHAR*_def=NULL){
+			if(ptr==NULL && _def==NULL)return NULL;
+			long i=length;
+			TCHAR *p=ptr;
+			
+			if(p==NULL){
+				p=_def;
+				i=_tcslen(p);
+			}
+			TCHAR *cpy=new TCHAR[i+1];
+			_tcscpy(cpy,p);
 			return cpy;
 		}
 		

@@ -88,7 +88,6 @@ typedef struct {
 	int           lockStrategy; //scc.ini: shows if we want to manage locks.
 	bool          messagePrefix; //scc.ini: if we want to display predefined prefix on commit
 	unsigned long cacheTtlMs;  //info from registry: time to live for cache in milliseconds
-	mstring*      pipeOut;     //here we are storing stdout of the child process
 	mstring*      pipeErr;     //here we are storing stderr of the child process
 	CHAR          uid[PBSCC_UID+1];
 	CHAR          pwd[PBSCC_UID+1];
