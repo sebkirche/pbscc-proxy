@@ -187,8 +187,9 @@ bool _entries_scanwc_callback(SVNENTRY*e,void*udata) {
 BOOL __sccupdate(THECONTEXT*ctx){
 	if(GetTickCount() - ctx->dwLastUpdateTime > DELAYFORNEWCOMMENT) {
 		log("Update repository.\n");
-		if(!_execscc(ctx,"svn update --non-interactive --trust-server-cert \"%s\"",ctx->lpProjName))return false;
-		if(ctx->pipeOut->match("^[CG] ")){
+		mstring pipeOut=mstring();
+		if(!_execscc(ctx,&pipeOut,"svn update --non-interactive --trust-server-cert \"%s\"",ctx->lpProjName))return false;
+		if(pipeOut.match("^[CG] ")){
 			_msg(ctx,"Conflict during updating repository.");
 			_msg(ctx,"Please resolve all conflicts manually to continue work.");
 		}
@@ -206,9 +207,9 @@ bool ScanWC(THECONTEXT* ctx,bool force) {
 		ctx->svni->reset();
 		if( ctx->lockStrategy & LOCKSTRATEGY_LOCK ){
 			//for lock strategy we call "svn status" and parse response
-			if(_execscc(ctx,"svn stat --xml --non-interactive --trust-server-cert -u -v \"%s\"",ctx->lpProjName)){
+			if(_execscc(ctx,NULL,"svn stat --xml --non-interactive --trust-server-cert -u -v \"%s\"",ctx->lpProjName)){
 				mstring err;
-				if(!parseSvnStatus(ctx->pipeOut->c_str(),ctx->svni,&err)){
+				if(!parseSvnStatus(ctx->lpOutTmp,ctx->svni,&err)){
 					_msg(ctx,err);
 					return false;
 				}
@@ -305,7 +306,7 @@ BOOL _scccommit(THECONTEXT*ctx,SCCCOMMAND icmd){
 		}
 		default : return false;
 	}
-	if(!_execscc(ctx, cmd, ctx->lpTargetsTmp, ctx->lpMsgTmp)){
+	if(!_execscc(ctx, NULL, cmd, ctx->lpTargetsTmp, ctx->lpMsgTmp)){
 		return false;
 	}
 	ctx->dwLastCommitTime = GetTickCount();
@@ -644,14 +645,13 @@ SCCEXTERNC SCCRTN EXTFUN SccInitialize(LPVOID * ppContext, HWND hWnd, LPCSTR lpC
 	log("\t msg pipe       : %s\n",ctx->lpMsgTmp);
 	
 	ctx->comment=new mstring();
-	ctx->pipeOut=new mstring();
 	ctx->pipeErr=new mstring();
 	ctx->svni=new svninfo();
 	
 	ctx->parent=hWnd;
 	
 	//the last command/ just to test
-	_execscc(ctx,"%s","set");
+	_execscc(ctx, NULL,"%s","set");
 	
 	return SCC_OK;
 }
@@ -666,7 +666,6 @@ SCCEXTERNC SCCRTN EXTFUN SccUninitialize(LPVOID pContext){
 	DeleteFile(ctx->lpMsgTmp); //delete temp file
 	
 	delete ctx->comment;
-	delete ctx->pipeOut;
 	delete ctx->pipeErr;
 	delete ctx->svni;
 
@@ -698,7 +697,7 @@ SCCEXTERNC SCCRTN EXTFUN SccGetProjPath(LPVOID pContext, HWND hWnd, LPSTR lpUser
 	if(id){
 		SHGetPathFromIDList(id, lpProjName);
 		if(SHGetMalloc(&lpMalloc)==NOERROR)lpMalloc->Free(id);
-		if(!_execscc(ctx,"svn info -r BASE --non-interactive --trust-server-cert \"%s\"",lpProjName)){
+		if(!_execscc(ctx, NULL,"svn info -r BASE --non-interactive --trust-server-cert \"%s\"",lpProjName)){
 			char buf[2048];
 			_snprintf(buf,sizeof(buf)-1,"The selected folder is not under source control or SVN repository is not available.\n\n"  
 				"The command line\n"
@@ -773,11 +772,11 @@ SCCEXTERNC SCCRTN EXTFUN SccOpenProject(LPVOID pContext,HWND hWnd, LPSTR lpUser,
 					fflush(f);
 					fclose(f);
 					//add file into svn
-					if(_execscc(ctx,"svn add --non-interactive --trust-server-cert \"%s\"",buf.c_str())  ){
-						if(!_execscc(ctx,"svn commit --non-interactive --trust-server-cert -m \"project init\" \"%s\"",buf.c_str()))
+					if(_execscc(ctx, NULL,"svn add --non-interactive --trust-server-cert \"%s\"",buf.c_str())  ){
+						if(!_execscc(ctx, NULL,"svn commit --non-interactive --trust-server-cert -m \"project init\" \"%s\"",buf.c_str()))
 							return SCC_E_INITIALIZEFAILED;
 					}else{
-						_execscc(ctx,"svn revert --non-interactive --trust-server-cert \"%s\"",buf.c_str());
+						_execscc(ctx, NULL,"svn revert --non-interactive --trust-server-cert \"%s\"",buf.c_str());
 						return SCC_E_INITIALIZEFAILED;
 					}
 				}
@@ -932,15 +931,15 @@ SCCEXTERNC SCCRTN EXTFUN SccCheckout(LPVOID pContext, HWND hWnd, LONG nFiles, LP
 				if(svni->owner[0])return SCC_E_ALREADYCHECKEDOUT;
 			}else return SCC_E_FILENOTCONTROLLED;
 		}
-		if(!_execscc(ctx,"svn propset --non-interactive --trust-server-cert lockby \"%s\" --targets \"%s\"",ctx->lpUser,ctx->lpTargetsTmp)  )return SCC_E_NONSPECIFICERROR;
+		if(!_execscc(ctx, NULL,"svn propset --non-interactive --trust-server-cert lockby \"%s\" --targets \"%s\"",ctx->lpUser,ctx->lpTargetsTmp)  )return SCC_E_NONSPECIFICERROR;
 		if(!_scccommit(ctx,SCC_COMMAND_CHECKOUT )){
-			_execscc(ctx,"svn revert --non-interactive --trust-server-cert --targets \"%s\"",ctx->lpTargetsTmp);
+			_execscc(ctx, NULL,"svn revert --non-interactive --trust-server-cert --targets \"%s\"",ctx->lpTargetsTmp);
 			return SCC_E_ACCESSFAILURE;
 		}
 	}
 	if( ctx->lockStrategy&LOCKSTRATEGY_LOCK ) {
 		if(!__sccupdate(ctx))return SCC_E_ACCESSFAILURE;
-		if(!_execscc(ctx,"svn lock --non-interactive --trust-server-cert --targets \"%s\" -m CheckOut",ctx->lpTargetsTmp)){
+		if(!_execscc(ctx, NULL,"svn lock --non-interactive --trust-server-cert --targets \"%s\" -m CheckOut",ctx->lpTargetsTmp)){
 			return SCC_E_ACCESSFAILURE;
 		}
 	}
@@ -964,7 +963,7 @@ SCCEXTERNC SCCRTN EXTFUN SccUncheckout(LPVOID pContext, HWND hWnd, LONG nFiles, 
 	if (!_files2list(ctx, nFiles, lpFileNames, false ))return SCC_E_ACCESSFAILURE;
 	
 	if( ctx->lockStrategy&LOCKSTRATEGY_LOCK ) {
-		if(!_execscc(ctx,"svn unlock --non-interactive --trust-server-cert --force --targets \"%s\" ",ctx->lpTargetsTmp))goto error;
+		if(!_execscc(ctx, NULL,"svn unlock --non-interactive --trust-server-cert --force --targets \"%s\" ",ctx->lpTargetsTmp))goto error;
 	}
 	
 	if( ctx->lockStrategy&LOCKSTRATEGY_PROP ) {
@@ -977,7 +976,7 @@ SCCEXTERNC SCCRTN EXTFUN SccUncheckout(LPVOID pContext, HWND hWnd, LONG nFiles, 
 			}else return SCC_E_FILENOTCONTROLLED;
 		}
 		for(i=0;i<nFiles;i++){
-			if(!_execscc(ctx,"svn propdel --non-interactive --trust-server-cert lockby \"%s\"",_subst(ctx,lpFileNames[i]))  )
+			if(!_execscc(ctx, NULL,"svn propdel --non-interactive --trust-server-cert lockby \"%s\"",_subst(ctx,lpFileNames[i]))  )
 				goto error;
 		}
 		if(!_scccommit(ctx,SCC_COMMAND_UNCHECKOUT ))goto error;
@@ -992,7 +991,7 @@ SCCEXTERNC SCCRTN EXTFUN SccUncheckout(LPVOID pContext, HWND hWnd, LONG nFiles, 
 	ctx->dwLastScanTime=0;
 	return SCC_OK;
 	error:
-	_execscc(ctx,"svn revert --non-interactive --trust-server-cert --targets \"%s\"",ctx->lpTargetsTmp);
+	_execscc(ctx, NULL,"svn revert --non-interactive --trust-server-cert --targets \"%s\"",ctx->lpTargetsTmp);
 	//reset scan time to force scanning
 	ctx->dwLastScanTime=0;
 	return SCC_E_ACCESSFAILURE;
@@ -1018,7 +1017,7 @@ SCCEXTERNC SCCRTN EXTFUN SccCheckin(LPVOID pContext, HWND hWnd, LONG nFiles, LPC
 			if( (svni = ctx->svni->get(ctx->lpProjPath,lpFileNames[i],NULL))!=NULL ){
 				if( !svni->isOwner ) return SCC_E_NOTCHECKEDOUT;
 			}else return SCC_E_FILENOTCONTROLLED;
-			if(!_execscc(ctx,"svn propdel --non-interactive --trust-server-cert lockby \"%s\"",_subst(ctx,lpFileNames[i]))  )
+			if(!_execscc(ctx, NULL,"svn propdel --non-interactive --trust-server-cert lockby \"%s\"",_subst(ctx,lpFileNames[i]))  )
 				goto error;
 		}
 	}
@@ -1036,7 +1035,7 @@ SCCEXTERNC SCCRTN EXTFUN SccCheckin(LPVOID pContext, HWND hWnd, LONG nFiles, LPC
 	ctx->dwLastScanTime=0;
 	return SCC_OK;
 	error:
-	_execscc(ctx,"svn revert --non-interactive --trust-server-cert --targets \"%s\"",ctx->lpTargetsTmp);
+	_execscc(ctx, NULL,"svn revert --non-interactive --trust-server-cert --targets \"%s\"",ctx->lpTargetsTmp);
 	//reset scan time to force scanning
 	ctx->dwLastScanTime=0;
 	return SCC_E_ACCESSFAILURE;
@@ -1057,11 +1056,11 @@ SCCEXTERNC SCCRTN EXTFUN SccAdd(LPVOID pContext, HWND hWnd, LONG nFiles, LPCSTR*
 	for(i=0;i<nFiles;i++){
 		if( !_copyfile(ctx,lpFileNames[i],_subst(ctx, (char*)lpFileNames[i])) )return SCC_E_FILENOTEXIST;
 	}
-	if(!_execscc(ctx,"svn add --non-interactive --force --non-recursive --trust-server-cert --targets \"%s\"",ctx->lpTargetsTmp)  )goto error;
+	if(!_execscc(ctx, NULL,"svn add --non-interactive --force --non-recursive --trust-server-cert --targets \"%s\"",ctx->lpTargetsTmp)  )goto error;
 	if(!_scccommit(ctx,SCC_COMMAND_ADD ))goto error;
 	return SCC_OK;
 	error:
-	_execscc(ctx,"svn revert --non-interactive --trust-server-cert --targets \"%s\"",ctx->lpTargetsTmp);
+	_execscc(ctx, NULL,"svn revert --non-interactive --trust-server-cert --targets \"%s\"",ctx->lpTargetsTmp);
 	for(i=0;i<nFiles;i++){
 		DeleteFile(_subst(ctx, (char*)lpFileNames[i]));
 	}
@@ -1080,11 +1079,11 @@ SCCEXTERNC SCCRTN EXTFUN SccRemove(LPVOID pContext, HWND hWnd, LONG nFiles, LPCS
 		SetFileAttributes(_subst(ctx, (char*)lpFileNames[i]),FILE_ATTRIBUTE_NORMAL);
 	}
 	
-	if(!_execscc(ctx,"svn del --non-interactive --trust-server-cert --targets \"%s\"",ctx->lpTargetsTmp)  )goto error;
+	if(!_execscc(ctx, NULL,"svn del --non-interactive --trust-server-cert --targets \"%s\"",ctx->lpTargetsTmp)  )goto error;
 	if(!_scccommit(ctx,SCC_COMMAND_REMOVE ))goto error;
 	return SCC_OK;
 	error:
-	_execscc(ctx,"svn revert --non-interactive --trust-server-cert --targets \"%s\"",ctx->lpTargetsTmp);
+	_execscc(ctx, NULL,"svn revert --non-interactive --trust-server-cert --targets \"%s\"",ctx->lpTargetsTmp);
 	return SCC_E_ACCESSFAILURE;
 }
 
@@ -1110,7 +1109,7 @@ SCCEXTERNC SCCRTN EXTFUN SccDiff(LPVOID pContext, HWND hWnd, LPCSTR lpFileName, 
 				_copyfile(ctx,lpFileName, _subst(ctx,lpFileName) );
 				buf.sprintf("TortoiseProc.exe /command:diff /path:\"%s\"", _subst(ctx,lpFileName) );
 				WinExec(buf.c_str(), SW_SHOW);
-				_execscc(ctx,"svn revert --non-interactive --trust-server-cert \"%s\"", _subst(ctx,lpFileName) );
+				_execscc(ctx, NULL,"svn revert --non-interactive --trust-server-cert \"%s\"", _subst(ctx,lpFileName) );
 				return SCC_OK;
 			}
 		}

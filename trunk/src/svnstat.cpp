@@ -19,13 +19,15 @@
  * this code parses the response of the "svn status --xml" command using expat library
  */
 
+ 
 #include <windows.h>
 #include <stdio.h>
 #include "expat.h"
 #include "mstring.h"
 #include "svninfo.h"
+#include "pbscc.h"
 
-#define BUF_SIZE	512
+#define BUF_SIZE	1024
 
 #if defined(__amigaos__) && defined(__USE_INLINE__)
 #include <proto/expat.h>
@@ -118,16 +120,15 @@ dataHandler(void *userData, const XML_Char *s, int len) {
 bool parseSvnStatus(char*filename,svninfo*svni,mstring*err){
 	int read;
 	XMLUDATA udata;
-	udata.status=STPARSE_DEF;
-	err->set(NULL);
 	XML_Parser p = XML_ParserCreate(NULL);
+	udata.status=STPARSE_DEF;
+	udata.svni=svni;
+	err->set(NULL);
 	XML_SetElementHandler(p, startElement, endElement);
 	XML_SetCharacterDataHandler(p, dataHandler);
 	XML_SetEncoding(p,"UTF-8");
 
-
 	XML_SetUserData(p, &udata);
-	
 	FILE*f=fopen(filename, "r");
 	if(f){
 		do{
@@ -137,7 +138,6 @@ bool parseSvnStatus(char*filename,svninfo*svni,mstring*err){
 				//handle error here
 				err->sprintf("%s at line %i\n", XML_ErrorString(XML_GetErrorCode(p)), XML_GetCurrentLineNumber(p));
 			}
-			
 		}while(read>0 && err->len()==0);
 		fclose(f);
 	}else{
@@ -146,6 +146,5 @@ bool parseSvnStatus(char*filename,svninfo*svni,mstring*err){
 	XML_ParserFree(p);
 	return (err->len()==0);
 }
-
 
 

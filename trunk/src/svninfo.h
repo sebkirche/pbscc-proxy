@@ -116,8 +116,8 @@ class svninfo {
 			}
 			
 			ptr[count].path=buf->set(_path)->addPath(_name)->c_copy();
-			ptr[count].rev=buf->set(_rev)->c_copy();
-			ptr[count].owner=buf->set(_owner)->c_copy();
+			ptr[count].rev=buf->set(_rev)->c_copy("");
+			ptr[count].owner=buf->set(_owner)->c_copy("");
 			ptr[count].hash=hash(ptr[count].path);
 			ptr[count].isOwner=_isOwner;
 			count++;
