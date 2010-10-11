@@ -2,7 +2,7 @@
 
 PRJNAME=pbscc
 
-LIB_FILES= KERNEL32.lib USER32.lib SHELL32.LIB ADVAPI32.LIB wininet.lib lib\libexpat.lib
+LIB_FILES= KERNEL32.lib USER32.lib SHELL32.LIB ADVAPI32.LIB wininet.lib lib\pbscc_expat.lib
 
 
 CPP_FILES= pbscc.cpp todo.cpp easystr.cpp entries.cpp filecmp.cpp conproc.cpp login.cpp filecpy.cpp svnstat.cpp test.cpp
@@ -21,7 +21,7 @@ x_res:
 	rc $(rcvars) $(rcflags) -r -fo $(PRJNAME).res $(PRJNAME).rc
 
 x_exe: $(OBJS)
-	$(link) /dll /RELEASE /VERSION:2.4 -out:$(PRJNAME).dll $(OBJS) $(PRJNAME).res $(LIB_FILES) /DEF:$(PRJNAME).def
+	$(link) /dll /NODEFAULTLIB:LIBCMT.LIB /RELEASE /VERSION:2.4 -out:$(PRJNAME).dll $(OBJS) $(PRJNAME).res $(LIB_FILES) /DEF:$(PRJNAME).def
 
 test: $(OBJS)
 	$(link) /RELEASE -out:$(PRJNAME)_test.exe $(OBJS) $(PRJNAME).res $(LIB_FILES)
