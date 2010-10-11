@@ -69,7 +69,7 @@ void _PCLOSE(FILE*_stdout, FILE*_stderr ){
 
 
 //returns true if error pipe is empty.
-BOOL _execscc(THECONTEXT*ctx, char * cmd,char * parm,char * parm2){
+BOOL _execscc(THECONTEXT*ctx,mstring * pipeOut, char * cmd,char * parm,char * parm2){
 	int repeat_cnt=0;
 	FILE *fout=NULL;
 	FILE *ferr=NULL;
@@ -78,7 +78,7 @@ BOOL _execscc(THECONTEXT*ctx, char * cmd,char * parm,char * parm2){
 	
 	repeat:
 	log("exec: %s\n",buf.c_str());
-	ctx->pipeOut->set(NULL);
+	if(pipeOut)pipeOut->set(NULL);
 	ctx->pipeErr->set(NULL);
 	
 	if( _POPEN( ctx, buf.c_str(), &fout, &ferr )  ) {
@@ -86,11 +86,13 @@ BOOL _execscc(THECONTEXT*ctx, char * cmd,char * parm,char * parm2){
     	fbuf[sizeof(fbuf)-1]=0;
 
     	//read out
-   		while(fgets(fbuf,sizeof(fbuf)-1,fout)){
-   			ctx->pipeOut->append(fbuf);
-   		}
-   		ctx->pipeOut->rtrim();
-		if(ctx->pipeOut->len()>0)log("stdout: %s\n",ctx->pipeOut->c_str());
+    	if(pipeOut){
+			while(fgets(fbuf,sizeof(fbuf)-1,fout)){
+				pipeOut->append(fbuf);
+			}
+			pipeOut->rtrim();
+			if(pipeOut->len()>0)log("stdout: %s\n",pipeOut->c_str());
+    	}
 
 		//read error
    		while(fgets(fbuf,sizeof(fbuf)-1,ferr)){

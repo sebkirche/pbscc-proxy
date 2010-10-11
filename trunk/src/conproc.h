@@ -15,4 +15,4 @@
  *
  */
 
-BOOL _execscc(THECONTEXT*ctx, char * cmd,char * parm,char * parm2=NULL);
+BOOL _execscc(THECONTEXT*ctx, mstring* pipeOut, char * cmd,char * parm,char * parm2=NULL);
