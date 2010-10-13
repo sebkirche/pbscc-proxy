@@ -40,9 +40,8 @@ int main(int argc, char *argv[]) {
 	long t=0;
 	int i;
 	
-	printf("copy=%i\n",CopyFileUTF8("in.srw","out.srw") );
-	if(1==1)return 0;
-	
+	//printf("copy=%i\n",CopyFileUTF8("in.srw","out.srw") );
+	//if(1==1)return 0;
 	
 	LONG lpSccCaps,pnCheckoutCommentLen,pnCommentLen;
 	logFile=stdout;
@@ -58,17 +57,11 @@ int main(int argc, char *argv[]) {
 		SccOpenProject(ctx, NULL, "root", wc, "pb-workspace", "aux", "comment", outproc,0);
 		t=timer(t,"SccOpenProject end");
 		
+		printf("copy=%i\n",_copyfile(ctx,"in.srw","out.srw"));
 		
-//		for(i=0;i<5000;i++){
-//			ScanWC(ctx);
-//		}
+		ScanWC(ctx,false);
 		ScanWC(ctx,false);
 	
-		SVNINFOITEM *svni;
-		printf("case 1: \n");
-		svni=ctx->svni->get( "D:\\Home\\Projects\\pbscc-test\\newtest\\pb\\" , "d:\\home\\projects\\pbscc-test\\newtest\\pb/scc.ini",NULL);
-		ctx->svni->print(svni,stdout);
-		
 		//for(i=0;i<ctx->svni->getCount();i++)ctx->svni->print(ctx->svni->get(i));
 		//printf("count=%i\n\n\n",ctx->svni->getCount());
 		
