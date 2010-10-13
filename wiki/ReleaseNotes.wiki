@@ -1,7 +1,7 @@
 #summary Release Notes / What's New
 #labels Featured
 
- * *2.01.73* Detect other users locks using "svn stat -u -v" command.
+ * *2.01.73* <font color="red">Alpha</font> Detect other users locks using "svn stat -u -v" command.
 
  * *2.00.45* Suppress comment prompt for multi-object svn operations 
   * and keep comment for PBG files from previous svn operation. 
