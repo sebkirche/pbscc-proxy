@@ -3,7 +3,7 @@
 == commands for "svn lock" object locking strategy ==
 
  * `SccQueryInfo`
-  * svn update
+  * svn stat -u -v
  * `SccCheckout`
   * svn update (force)
   * svn lock
