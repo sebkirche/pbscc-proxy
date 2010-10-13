@@ -116,6 +116,8 @@ bool ShowSysError(char*info,int err=0);
 bool _loginscc(THECONTEXT*ctx);
 void _msg(THECONTEXT*ctx,char * s);
 extern HINSTANCE	hInstance;
-
 bool ScanWC(THECONTEXT* ctx,bool force);
+BOOL _copyfile(THECONTEXT *ctx,const char*src,char*dst);
+
+
 
