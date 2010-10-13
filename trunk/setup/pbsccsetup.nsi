@@ -38,6 +38,7 @@ Section "PBSCC Proxy"
 	File "Bin\svnlog.cmd"
 	File "Bin\svndiff.cmd"
 	File "Bin\pbscc.dll"
+	File "Bin\pbscc_expat.dll"
 	
 	WriteUninstaller "PbSccDel.exe"
 
@@ -87,10 +88,11 @@ Section "Uninstall"
 	DeleteRegValue HKLM "SOFTWARE\SourceCodeControlProvider\InstalledSCCProviders" "PBSCC Proxy"
 	
 	; Remove files and uninstaller
-	Delete $INSTDIR\Bin\pbscc.dll
+	Delete "$INSTDIR\Bin\pbscc.dll"
 	Delete "$INSTDIR\Bin\svnci.cmd"
 	Delete "$INSTDIR\Bin\svnlog.cmd"
 	Delete "$INSTDIR\Bin\svndiff.cmd"
+	Delete "$INSTDIR\Bin\pbscc_expat.dll"
 	Delete $INSTDIR\PbSccDel.exe
 
 SectionEnd
