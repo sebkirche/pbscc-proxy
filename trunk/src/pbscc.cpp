@@ -74,6 +74,8 @@ BOOL APIENTRY DllMain(HINSTANCE hInst, DWORD ul_reason_for_call, void* lpReserve
 					if(!logFile)logFile=fopen(buf,"at");
 					log("\n\n---------------------------------------------------------\n"
 						"DllMain DLL_PROCESS_ATTACH hInst=%X\n",hInst);
+					log("version=%s\n",PROJECT_VER);
+					log("compile.date=%s\n",PROJECT_DATE);
 				}
 				RegCloseKey(rkey);
 			}
