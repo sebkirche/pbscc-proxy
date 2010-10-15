@@ -587,7 +587,7 @@ SCCEXTERNC SCCRTN EXTFUN SccInitialize(LPVOID * ppContext, HWND hWnd, LPCSTR lpC
 	memset( ctx, 0, sizeof(THECONTEXT) );
 	strcpy(ctx->lpCallerName,lpCallerName);
 	strcpy(lpSccName,gpSccName);
-	lpSccCaps[0]=0x200828D;
+	lpSccCaps[0]=0x200828D|SCC_CAP_PROPERTIES;
 	lpAuxPathLabel[0]=0;
 	pnCheckoutCommentLen[0]=PBSCC_MSGLEN+1;
 	pnCommentLen[0]=PBSCC_MSGLEN+1;
@@ -1151,8 +1151,17 @@ SCCEXTERNC SCCRTN EXTFUN SccRename(LPVOID pContext, HWND hWnd, LPCSTR lpFileName
 }
 
 SCCEXTERNC SCCRTN EXTFUN SccProperties(LPVOID pContext, HWND hWnd, LPCSTR lpFileName){
-	log("SccProperties: not supported\n");
-	return SCC_E_OPNOTSUPPORTED;
+	log("SccProperties:\n");
+	THECONTEXT *ctx=(THECONTEXT *)pContext;
+	SVNINFOITEM * svni = ctx->svni->get(ctx->lpProjPath,lpFileName, NULL);
+	mstring s=mstring();
+	if(svni){
+		s.sprintf("%s\nrevision: %s\nowner: %s",svni->path,svni->rev,svni->owner);
+	}else{
+		s.set("not controlled.");
+	}
+	_msg(ctx,s);
+	return SCC_OK;
 }
 
 SCCEXTERNC SCCRTN EXTFUN SccPopulateList(LPVOID pContext, enum SCCCOMMAND nCommand, LONG nFiles, LPCSTR* lpFileNames, POPLISTFUNC pfnPopulate, LPVOID pvCallerData,LPLONG lpStatus, LONG dwFlags){
