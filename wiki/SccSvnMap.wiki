@@ -29,3 +29,5 @@
   * svn commit
  * `SccHistory`
   * tortoiseproc.exe /command:log
+ * `SccDiff` (only for visual diff)
+  * tortoiseproc.exe /command:diff
