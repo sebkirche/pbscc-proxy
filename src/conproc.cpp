@@ -69,12 +69,18 @@ void _PCLOSE(FILE*_stdout, FILE*_stderr ){
 
 
 //returns true if error pipe is empty.
-BOOL _execscc(THECONTEXT*ctx,mstring * pipeOut, char * cmd,char * parm,char * parm2){
+BOOL _execscc(THECONTEXT*ctx,mstring * _pipeOut, char * cmd,char * parm,char * parm2){
 	int repeat_cnt=0;
 	FILE *fout=NULL;
 	FILE *ferr=NULL;
+	mstring pipeOutLocal;
+	mstring * pipeOut=_pipeOut;
 	mstring buf;
 	buf.sprintf(cmd,parm,parm2);
+	//this will copy stdout into log file
+	if( logEnabled() && pipeOut==NULL){
+		pipeOut=&pipeOutLocal;
+	}
 	
 	repeat:
 	log("exec: %s\n",buf.c_str());

@@ -49,6 +49,10 @@ void log(const char* szFmt,...) {
 	}
 }
 
+boolean logEnabled(){
+	return logFile?1:0;
+}
+
 bool ShowSysError(char*info,int err){
 	LPVOID lpMsgBuf;
 	if(err==0)err=GetLastError();
