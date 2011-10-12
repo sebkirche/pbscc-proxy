@@ -112,6 +112,7 @@ typedef struct {
 
 
 void log(const char* szFmt,...);
+boolean logEnabled();
 bool ShowSysError(char*info,int err=0);
 bool _loginscc(THECONTEXT*ctx);
 void _msg(THECONTEXT*ctx,char * s);
