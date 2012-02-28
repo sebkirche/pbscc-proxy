@@ -1,4 +1,4 @@
-#when pbscc is not working for you, please follow this guide
+#when pbscc is not working for you, please follow this guide.
 
 <wiki:toc max_depth="2" />
 
